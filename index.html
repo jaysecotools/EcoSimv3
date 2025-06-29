@@ -2165,11 +2165,38 @@ input:checked ~ .toggle-slider:before {
           // Draw food web connections
           drawFoodWeb();
           
-          // Draw population indicators
-          drawPopulationIndicator(200, p.height/2, grass, "#4CAF50", "Grass");
-          drawPopulationIndicator(400, p.height/2, pademelons, "#FF9800", "Pademelons");
-          drawPopulationIndicator(600, p.height/2, devils, "#F44336", "Devils");
-          drawPopulationIndicator(800, p.height/2, bandicoots, "#FFEB3B", "Bandicoots");
+          // Draw population indicators with centered spacing
+          const spacing = p.width / 5;
+          drawPopulationIndicator(spacing, p.height/2, grass, "#4CAF50", "Grass");
+          drawPopulationIndicator(2 * spacing, p.height/2, pademelons, "#FF9800", "Pademelons");
+          drawPopulationIndicator(3 * spacing, p.height/2, devils, "#F44336", "Devils");
+          drawPopulationIndicator(4 * spacing, p.height/2, bandicoots, "#FFEB3B", "Bandicoots");
+        }
+
+        // Draw food web connections
+        function drawFoodWeb() {
+          p.strokeWeight(2);
+          const spacing = p.width / 5;
+          
+          // Grass → Pademelons
+          if (grass > 10 && pademelons > 10) {
+            p.stroke(76, 175, 80, 150);
+            p.line(spacing + 20, p.height/2, 2 * spacing - 20, p.height/2);
+          }
+          
+          // Pademelons → Devils
+          if (pademelons > 10 && devils > 10) {
+            p.stroke(244, 67, 54, 150);
+            p.line(2 * spacing + 20, p.height/2, 3 * spacing - 20, p.height/2);
+          }
+          
+          // Bandicoots → Grass (positive feedback)
+          if (bandicoots > 10 && grass > 10) {
+            p.stroke(255, 235, 59, 150);
+            p.drawingContext.setLineDash([5, 3]);
+            p.line(4 * spacing - 20, p.height/2, spacing + 20, p.height/2);
+            p.drawingContext.setLineDash([]);
+          }
         }
 
         // Draw particle effects
@@ -2201,31 +2228,6 @@ input:checked ~ .toggle-slider:before {
             p.noStroke();
             p.ellipse(part.x, part.y, part.size);
           });
-        }
-
-        // Draw food web connections
-        function drawFoodWeb() {
-          p.strokeWeight(2);
-          
-          // Grass → Pademelons
-          if (grass > 10 && pademelons > 10) {
-            p.stroke(76, 175, 80, 150);
-            p.line(220, p.height/2, 380, p.height/2);
-          }
-          
-          // Pademelons → Devils
-          if (pademelons > 10 && devils > 10) {
-            p.stroke(244, 67, 54, 150);
-            p.line(420, p.height/2, 580, p.height/2);
-          }
-          
-          // Bandicoots → Grass (positive feedback)
-          if (bandicoots > 10 && grass > 10) {
-            p.stroke(255, 235, 59, 150);
-            p.drawingContext.setLineDash([5, 3]);
-            p.line(780, p.height/2, 250, p.height/2);
-            p.drawingContext.setLineDash([]);
-          }
         }
 
         // Draw population indicator

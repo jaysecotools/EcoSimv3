@@ -1722,7 +1722,7 @@ input:checked ~ .toggle-slider:before {
           const growthRate = grass / 200;
           
           // Losses from predation, environment, and humans
-          const predationLoss = devils / 8;
+          const predationLoss = devils / 10; // Changed from 8 to 10 to reduce impact from devils
           const tempStress = temperature > 25 ? (temperature - 25) / 10 : 0;
           const humanLoss = humanImpact / 3;
           const invasiveLoss = invasiveSpecies / 8;
@@ -1777,7 +1777,7 @@ input:checked ~ .toggle-slider:before {
         // Update devil population
         function updateDevils(humanImpact, temperature) {
           // Devils primarily depend on pademelons but will scavenge
-          const foodAvailability = (pademelons / 70) + (bandicoots / 100);
+          const foodAvailability = (pademelons / 100) + (bandicoots / 80); // Adjusted from (pademelons / 70) + (bandicoots / 100)
           
           // Carrying capacity based on available prey
           const carryingCapacity = (pademelons + bandicoots) * 0.4;

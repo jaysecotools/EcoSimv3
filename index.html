@@ -1662,18 +1662,27 @@ input:checked ~ .toggle-slider:before {
         }
 
         // Update seasonal changes
-        function updateSeasons() {
-          if (customFrameCount % seasonDuration === 0) {
-            season = (season + 1) % 4;
-            seasonDisplay.textContent = seasonParams[season].name;
-            targetRainfall = seasonParams[season].rainfall;
-            targetTemperature = seasonParams[season].temperature;
-          }
-          
-          // Smooth seasonal transitions
-          currentRainfall += (targetRainfall - currentRainfall) * interpolationSpeed;
-          currentTemperature += (targetTemperature - currentTemperature) * interpolationSpeed;
-        }
+function updateSeasons() {
+  if (showSeasons) {
+    if (customFrameCount % seasonDuration === 0) {
+      season = (season + 1) % 4;
+      seasonDisplay.textContent = seasonParams[season].name;
+      targetRainfall = seasonParams[season].rainfall;
+      targetTemperature = seasonParams[season].temperature;
+    }
+    
+    // Smooth seasonal transitions
+    currentRainfall += (targetRainfall - currentRainfall) * interpolationSpeed;
+    currentTemperature += (targetTemperature - currentTemperature) * interpolationSpeed;
+  } else {
+    // When seasons are off, maintain baseline conditions
+    seasonDisplay.textContent = "None";
+    targetRainfall = 50;  // Midpoint value
+    targetTemperature = 25; // Midpoint value
+    currentRainfall = targetRainfall;
+    currentTemperature = targetTemperature;
+  }
+}
 
         // Get modified rainfall value
         function getModifiedRainfall() {
@@ -1687,123 +1696,115 @@ input:checked ~ .toggle-slider:before {
           return currentTemperature + tempSlider;
         }
 
-        // Update grass population
-        function updateGrass(rainfall, invasiveSpecies) {
-          // Base growth affected by rainfall and bandicoots (keystone effect)
-          const bandicootEffect = 1 + (bandicoots * 0.002);
-          const growthRate = (rainfall / 20) * bandicootEffect;
-          
-          // Loss from pademelons grazing and invasive species
-          const lossRate = (pademelons / 25) + (invasiveSpecies / 2);
-          
-          // Update grass population
-          grass += growthRate - lossRate;
-          grass = p.max(grass, 0);
-          
-          // Track max grass for objectives
-          if (grass > maxGrass) maxGrass = grass;
-          
-          // Add particles when grass grows
-          if (growthRate > lossRate && Math.random() < 0.1) {
-            grassParticles.push({
-              x: p.random(p.width),
-              y: p.height/2,
-              size: p.random(5, 10),
-              life: 100,
-              vx: p.random(-1, 1),
-              vy: p.random(-2, -1)
-            });
-          }
-        }
+        // Update grass population - increased bandicoot effect
+function updateGrass(rainfall, invasiveSpecies) {
+  // Increased bandicoot effect (from 0.002 to 0.0035)
+  const bandicootEffect = 1 + (bandicoots * 0.0035);
+  const growthRate = (rainfall / 20) * bandicootEffect;
+  
+  // Slightly reduced grazing pressure
+  const lossRate = (pademelons / 30) + (invasiveSpecies / 2);
+  
+  grass += growthRate - lossRate;
+  grass = p.max(grass, 0);
+  
+  if (grass > maxGrass) maxGrass = grass;
+  
+  if (growthRate > lossRate && Math.random() < 0.1) {
+    grassParticles.push({
+      x: p.random(p.width),
+      y: p.height/2,
+      size: p.random(5, 10),
+      life: 100,
+      vx: p.random(-1, 1),
+      vy: p.random(-2, -1)
+    });
+  }
+}
 
-        // Update pademelon population
-        function updatePademelons(temperature, humanImpact, invasiveSpecies) {
-          // Growth depends on available grass
-          const growthRate = grass / 200;
-          
-          // Losses from predation, environment, and humans
-          const predationLoss = devils / 10; // Changed from 8 to 10 to reduce impact from devils
-          const tempStress = temperature > 25 ? (temperature - 25) / 10 : 0;
-          const humanLoss = humanImpact / 3;
-          const invasiveLoss = invasiveSpecies / 8;
-          
-          pademelons += growthRate - predationLoss - tempStress - humanLoss - invasiveLoss;
-          pademelons = p.max(pademelons, 0);
-          
-          if (pademelons > maxPademelons) maxPademelons = pademelons;
-          
-          // Add particles when pademelons reproduce
-          if (growthRate > predationLoss && Math.random() < 0.05) {
-            pademelonParticles.push({
-              x: p.random(p.width),
-              y: p.height/2,
-              size: p.random(8, 12),
-              life: 100,
-              vx: p.random(-1, 1),
-              vy: p.random(-1, 0)
-            });
-          }
-        }
+// Update pademelon population - reduced predation impact
+function updatePademelons(temperature, humanImpact, invasiveSpecies) {
+  const growthRate = grass / 200;
+  
+  // Reduced devil predation (from /10 to /12) and temperature stress
+  const predationLoss = devils / 12;
+  const tempStress = temperature > 25 ? (temperature - 25) / 12 : 0;
+  const humanLoss = humanImpact / 3;
+  const invasiveLoss = invasiveSpecies / 8;
+  
+  pademelons += growthRate - predationLoss - tempStress - humanLoss - invasiveLoss;
+  pademelons = p.max(pademelons, 0);
+  
+  if (pademelons > maxPademelons) maxPademelons = pademelons;
+  
+  if (growthRate > predationLoss && Math.random() < 0.05) {
+    pademelonParticles.push({
+      x: p.random(p.width),
+      y: p.height/2,
+      size: p.random(8, 12),
+      life: 100,
+      vx: p.random(-1, 1),
+      vy: p.random(-1, 0)
+    });
+  }
+}
 
-        // Update bandicoot population
-        function updateBandicoots(temperature, invasiveSpecies, humanImpact) {
-          // Bandicoots benefit from grass but compete with pademelons
-          const resourceAvailability = (grass / 300) - (pademelons / 400);
-          const tempEffect = temperature > 30 ? -(temperature - 30) / 15 : 0;
-          
-          // Threats from devils and human impact
-          const predationRisk = devils / 15;
-          const humanThreat = humanImpact / 4;
-          const invasiveThreat = invasiveSpecies / 6;
-          
-          bandicoots += resourceAvailability - predationRisk - humanThreat - invasiveThreat + tempEffect;
-          bandicoots = p.max(bandicoots, 0);
-          
-          if (bandicoots > maxBandicoots) maxBandicoots = bandicoots;
-          
-          // Add particles when bandicoots dig
-          if (resourceAvailability > predationRisk && Math.random() < 0.03) {
-            bandicootParticles.push({
-              x: p.random(p.width),
-              y: p.height/2,
-              size: p.random(6, 10),
-              life: 100,
-              vx: p.random(-0.5, 0.5),
-              vy: p.random(-0.5, 0.5)
-            });
-          }
-        }
+// Update bandicoot population - improved viability
+function updateBandicoots(temperature, invasiveSpecies, humanImpact) {
+  // Increased resource availability benefit
+  const resourceAvailability = (grass / 250) - (pademelons / 500);
+  const tempEffect = temperature > 30 ? -(temperature - 30) / 20 : 0;
+  
+  // Reduced threats
+  const predationRisk = devils / 20;
+  const humanThreat = humanImpact / 5;
+  const invasiveThreat = invasiveSpecies / 8;
+  
+  bandicoots += resourceAvailability - predationRisk - humanThreat - invasiveThreat + tempEffect;
+  bandicoots = p.max(bandicoots, 0);
+  
+  if (bandicoots > maxBandicoots) maxBandicoots = bandicoots;
+  
+  if (resourceAvailability > predationRisk && Math.random() < 0.03) {
+    bandicootParticles.push({
+      x: p.random(p.width),
+      y: p.height/2,
+      size: p.random(6, 10),
+      life: 100,
+      vx: p.random(-0.5, 0.5),
+      vy: p.random(-0.5, 0.5)
+    });
+  }
+}
 
-        // Update devil population
-        function updateDevils(humanImpact, temperature) {
-          // Devils primarily depend on pademelons but will scavenge
-          const foodAvailability = (pademelons / 100) + (bandicoots / 80); // Adjusted from (pademelons / 70) + (bandicoots / 100)
-          
-          // Carrying capacity based on available prey
-          const carryingCapacity = (pademelons + bandicoots) * 0.4;
-          const densityDependence = 1 - (devils / (carryingCapacity + 1));
-          
-          // Environmental stresses
-          const tempStress = p.abs(temperature - 20) / 15;
-          const humanStress = humanImpact / 3;
-          
-          devils += foodAvailability * densityDependence - tempStress - humanStress;
-          devils = p.max(devils, 0);
-          
-          if (devils > maxDevils) maxDevils = devils;
-          
-          // Add particles when devils hunt
-          if (foodAvailability > tempStress && Math.random() < 0.02) {
-            devilParticles.push({
-              x: p.random(p.width),
-              y: p.height/2,
-              size: p.random(10, 15),
-              life: 100,
-              vx: p.random(-0.5, 0.5),
-              vy: p.random(-0.5, 0.5)
-            });
-          }
-        }
+// Update devil population - reduced growth rate
+function updateDevils(humanImpact, temperature) {
+  // Slightly reduced food conversion efficiency
+  const foodAvailability = (pademelons / 110) + (bandicoots / 90);
+  
+  // More conservative carrying capacity
+  const carryingCapacity = (pademelons + bandicoots) * 0.35;
+  const densityDependence = 1 - (devils / (carryingCapacity + 1));
+  
+  const tempStress = p.abs(temperature - 20) / 15;
+  const humanStress = humanImpact / 3;
+  
+  devils += foodAvailability * densityDependence - tempStress - humanStress;
+  devils = p.max(devils, 0);
+  
+  if (devils > maxDevils) maxDevils = devils;
+  
+  if (foodAvailability > tempStress && Math.random() < 0.02) {
+    devilParticles.push({
+      x: p.random(p.width),
+      y: p.height/2,
+      size: p.random(10, 15),
+      life: 100,
+      vx: p.random(-0.5, 0.5),
+      vy: p.random(-0.5, 0.5)
+    });
+  }
+}
 
         // Update particle effects
         function updateParticles() {

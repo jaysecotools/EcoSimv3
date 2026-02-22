@@ -1,1237 +1,4 @@
-<!-- EcoSim v3.1 -->
-
-
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tasmanian Ecosystem Simulator - Fixed</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    /* [Keep all the same CSS from previous version] */
-    :root {
-      --primary-color: #4a8fe7;
-      --secondary-color: #44c767;
-      --danger-color: #e74c3c;
-      --warning-color: #f39c12;
-      --success-color: #2ecc71;
-      --dark-color: #2c3e50;
-      --light-color: #ecf0f1;
-      --gray-color: #95a5a6;
-      --text-color: #333;
-      --text-light: #7f8c8d;
-      --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      --transition: all 0.3s ease;
-    }
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: 'Poppins', sans-serif;
-      color: var(--text-color);
-      background-color: #f5f7fa;
-      line-height: 1.6;
-    }
-
-    .app-container {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-
-    .app-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 15px 0;
-      margin-bottom: 20px;
-      border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-    }
-
-    .app-header h1 {
-      font-size: 24px;
-      font-weight: 600;
-      color: var(--dark-color);
-    }
-
-    .app-header h1 i {
-      color: var(--secondary-color);
-      margin-right: 10px;
-    }
-
-    .header-badges {
-      display: flex;
-      gap: 15px;
-    }
-
-    .points-badge {
-      background-color: white;
-      padding: 8px 15px;
-      border-radius: 20px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-weight: 500;
-      box-shadow: var(--shadow);
-    }
-
-    .points-badge i {
-      color: var(--warning-color);
-    }
-
-    .ranger-medal {
-      background-color: white;
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: var(--shadow);
-      cursor: pointer;
-      transition: var(--transition);
-    }
-
-    .ranger-medal:hover {
-      transform: scale(1.1);
-    }
-
-    .ranger-medal i {
-      color: gold;
-      font-size: 20px;
-    }
-
-    .dashboard-container {
-      display: grid;
-      grid-template-columns: 280px 1fr 280px;
-      gap: 20px;
-    }
-
-    /* Control Panel Styles */
-    .control-panel {
-      background-color: white;
-      border-radius: 10px;
-      padding: 20px;
-      box-shadow: var(--shadow);
-      height: fit-content;
-    }
-
-    .panel-section {
-      margin-bottom: 25px;
-    }
-
-    .panel-section h2 {
-      font-size: 18px;
-      margin-bottom: 15px;
-      color: var(--dark-color);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .panel-section h2 i {
-      color: var(--primary-color);
-    }
-
-    .control-group {
-      margin-bottom: 15px;
-      position: relative;
-    }
-
-    .control-label {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 14px;
-      margin-bottom: 5px;
-      color: var(--text-light);
-    }
-
-    .control-label i {
-      width: 20px;
-      text-align: center;
-      color: var(--primary-color);
-    }
-
-    input[type="range"] {
-      width: 100%;
-      height: 6px;
-      -webkit-appearance: none;
-      background: #e0e0e0;
-      border-radius: 3px;
-      outline: none;
-    }
-
-    input[type="range"]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 18px;
-      height: 18px;
-      background: var(--primary-color);
-      border-radius: 50%;
-      cursor: pointer;
-      transition: var(--transition);
-    }
-
-    input[type="range"]::-webkit-slider-thumb:hover {
-      transform: scale(1.1);
-    }
-
-    .slider-value {
-      display: inline-block;
-      width: 40px;
-      text-align: center;
-      background: var(--light-color);
-      padding: 3px 8px;
-      border-radius: 4px;
-      font-size: 13px;
-      margin-left: 10px;
-    }
-
-    .button-group {
-      display: flex;
-      gap: 10px;
-      margin-top: 20px;
-    }
-
-    .btn {
-      padding: 10px 15px;
-      border: none;
-      border-radius: 6px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: var(--transition);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 14px;
-    }
-
-    .btn i {
-      font-size: 14px;
-    }
-
-    .btn-primary {
-      background-color: var(--primary-color);
-      color: white;
-      flex: 1;
-    }
-
-    .btn-primary:hover {
-      background-color: #3a7bd5;
-      transform: translateY(-2px);
-    }
-
-    .btn-secondary {
-      background-color: var(--light-color);
-      color: var(--text-color);
-      flex: 1;
-    }
-
-    .btn-secondary:hover {
-      background-color: #dfe6e9;
-      transform: translateY(-2px);
-    }
-
-    .btn-success {
-      background-color: var(--success-color);
-      color: white;
-      flex: 1;
-    }
-
-    .btn-success:hover {
-      background-color: #27ae60;
-      transform: translateY(-2px);
-    }
-
-    .toggle-group {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .toggle-switch {
-      display: flex;
-      align-items: center;
-      position: relative;
-      cursor: pointer;
-    }
-
-    .toggle-switch input {
-      position: absolute;
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
-
-    .toggle-label {
-      margin-left: 35px;
-      font-size: 14px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: var(--text-light);
-    }
-
-    .toggle-label i {
-      width: 20px;
-      color: var(--primary-color);
-    }
-
-    .toggle-slider {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 30px;
-      height: 16px;
-      background-color: #ccc;
-      border-radius: 8px;
-      transition: var(--transition);
-    }
-
-    .toggle-slider:before {
-      content: "";
-      position: absolute;
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background-color: white;
-      top: 2px;
-      left: 2px;
-      transition: var(--transition);
-    }
-
-    input:checked ~ .toggle-slider {
-      background-color: var(--primary-color);
-    }
-
-    input:checked ~ .toggle-slider:before {
-      transform: translateX(14px);
-    }
-
-    .speed-control {
-      margin-top: 20px;
-    }
-
-    .speed-control label {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 14px;
-      margin-bottom: 5px;
-      color: var(--text-light);
-    }
-
-    .speed-control label i {
-      color: var(--primary-color);
-    }
-
-    .speed-control input[type="range"] {
-      margin-bottom: 5px;
-    }
-
-    .ecosystem-health {
-      background-color: #f8f9fa;
-      padding: 15px;
-      border-radius: 8px;
-    }
-
-    .health-meter {
-      height: 10px;
-      background-color: #e0e0e0;
-      border-radius: 5px;
-      margin: 10px 0;
-      overflow: hidden;
-      position: relative;
-    }
-
-    .health-status {
-      height: 100%;
-      background: linear-gradient(90deg, var(--danger-color), var(--warning-color), var(--success-color));
-      transition: width 0.5s ease;
-    }
-
-    .health-text {
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--text-light);
-    }
-
-    .health-metrics {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-top: 15px;
-    }
-
-    .metric {
-      background-color: white;
-      padding: 8px;
-      border-radius: 6px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
-
-    .metric-label {
-      font-size: 12px;
-      color: var(--text-light);
-      display: block;
-    }
-
-    .metric-value {
-      font-weight: 600;
-      font-size: 14px;
-    }
-
-    /* Main Content Styles */
-    .main-content {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-
-    .visualization-container {
-      background-color: white;
-      border-radius: 10px;
-      padding: 20px;
-      box-shadow: var(--shadow);
-      position: relative;
-      overflow: hidden;
-    }
-
-    #canvas-container {
-      width: 100%;
-      height: 300px;
-      margin: 0 auto;
-    }
-
-    .alert-message {
-      position: absolute;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background-color: var(--danger-color);
-      color: white;
-      padding: 8px 15px;
-      border-radius: 20px;
-      font-size: 13px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      opacity: 0;
-      transition: var(--transition);
-      pointer-events: none;
-      z-index: 10;
-    }
-
-    .alert-message i {
-      font-size: 14px;
-    }
-
-    .chart-container {
-      background-color: white;
-      border-radius: 10px;
-      padding: 20px;
-      box-shadow: var(--shadow);
-    }
-
-    #populationChart {
-      width: 100% !important;
-      height: 250px !important;
-    }
-
-    .objective-panel {
-      background-color: white;
-      border-radius: 10px;
-      padding: 20px;
-      box-shadow: var(--shadow);
-    }
-
-    .objective-text {
-      font-size: 15px;
-      margin: 10px 0;
-      color: var(--text-color);
-    }
-
-    .progress-container {
-      height: 6px;
-      background-color: #f0f0f0;
-      border-radius: 3px;
-      margin-top: 15px;
-      position: relative;
-    }
-
-    .progress-bar {
-      height: 100%;
-      background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
-      border-radius: 3px;
-      transition: width 0.5s ease;
-    }
-
-    .progress-text {
-      position: absolute;
-      right: 0;
-      top: -20px;
-      font-size: 11px;
-      color: var(--text-light);
-    }
-
-    /* Info Panel Styles */
-    .info-panel {
-      background-color: white;
-      border-radius: 10px;
-      box-shadow: var(--shadow);
-      overflow: hidden;
-    }
-
-    .tabs {
-      display: flex;
-      border-bottom: 1px solid #eee;
-    }
-
-    .tab-btn {
-      flex: 1;
-      padding: 12px;
-      background: none;
-      border: none;
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--text-light);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      transition: var(--transition);
-    }
-
-    .tab-btn.active {
-      color: var(--primary-color);
-      border-bottom: 2px solid var(--primary-color);
-    }
-
-    .tab-btn i {
-      font-size: 14px;
-    }
-
-    .tab-content {
-      padding: 15px;
-      display: none;
-      height: calc(100% - 45px);
-      overflow-y: auto;
-    }
-
-    .tab-content.active {
-      display: block;
-    }
-
-    .species-card {
-      background-color: #f8f9fa;
-      border-radius: 8px;
-      padding: 15px;
-      margin-bottom: 12px;
-      transition: var(--transition);
-      cursor: pointer;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .species-card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-
-    .species-card.expanded {
-      padding-bottom: 40px;
-    }
-
-    .species-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-size: 18px;
-      margin-bottom: 10px;
-    }
-
-    .species-card h3 {
-      font-size: 16px;
-      margin-bottom: 5px;
-      display: flex;
-      justify-content: space-between;
-    }
-
-    .species-card .species-count {
-      font-weight: bold;
-      color: var(--dark-color);
-    }
-
-    .species-card p {
-      font-size: 13px;
-      color: var(--text-light);
-      margin-bottom: 10px;
-    }
-
-    .species-details {
-      max-height: 0;
-      overflow: hidden;
-      transition: max-height 0.3s ease;
-      font-size: 12px;
-      color: var(--text-light);
-      line-height: 1.5;
-    }
-
-    .species-card.expanded .species-details {
-      max-height: 200px;
-      margin-top: 10px;
-    }
-
-    .species-details strong {
-      color: var(--dark-color);
-    }
-
-    .species-details ul {
-      padding-left: 15px;
-      margin: 5px 0;
-    }
-
-    .achievements-grid {
-      display: grid;
-      gap: 10px;
-    }
-
-    .achievement-item {
-      background-color: #f8f9fa;
-      border-radius: 8px;
-      padding: 12px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      transition: var(--transition);
-    }
-
-    .achievement-item:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-
-    .achievement-item i {
-      color: var(--warning-color);
-      font-size: 18px;
-      flex-shrink: 0;
-    }
-
-    .achievement-text {
-      font-size: 13px;
-    }
-
-    .achievement-item.earned {
-      background-color: rgba(46, 204, 113, 0.1);
-    }
-
-    .achievement-item.earned i {
-      color: var(--success-color);
-    }
-
-    .achievement-points {
-      font-size: 11px;
-      color: var(--warning-color);
-      font-weight: bold;
-      margin-top: 3px;
-    }
-
-    .learn-section {
-      margin-bottom: 20px;
-    }
-
-    .learn-section h3 {
-      font-size: 15px;
-      margin-bottom: 10px;
-      color: var(--dark-color);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .learn-section h3 i {
-      color: var(--primary-color);
-    }
-
-    .learn-section p {
-      font-size: 13px;
-      color: var(--text-light);
-      margin-bottom: 15px;
-    }
-
-    .quiz-question {
-      background-color: #f8f9fa;
-      border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 15px;
-    }
-
-    .quiz-question p {
-      margin-bottom: 10px;
-      color: var(--text-color);
-    }
-
-    .quiz-btn {
-      background-color: var(--primary-color);
-      color: white;
-      border: none;
-      padding: 6px 12px;
-      border-radius: 4px;
-      font-size: 12px;
-      cursor: pointer;
-      transition: var(--transition);
-    }
-
-    .quiz-btn:hover {
-      background-color: #3a7bd5;
-    }
-
-    .quiz-answer {
-      font-size: 13px;
-      color: var(--success-color);
-      margin-top: 10px;
-      display: none;
-    }
-
-    /* Ranger Badge Modal */
-    .ranger-badge-modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0,0,0,0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-      opacity: 0;
-      pointer-events: none;
-      transition: var(--transition);
-    }
-
-    .ranger-badge-modal.show {
-      opacity: 1;
-      pointer-events: all;
-    }
-
-    .badge-content {
-      background-color: white;
-      border-radius: 10px;
-      padding: 30px;
-      text-align: center;
-      max-width: 400px;
-      width: 90%;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-      transform: translateY(20px);
-      transition: var(--transition);
-    }
-
-    .ranger-badge-modal.show .badge-content {
-      transform: translateY(0);
-    }
-
-    .badge-icon {
-      font-size: 60px;
-      color: gold;
-      margin-bottom: 20px;
-    }
-
-    .badge-content h2 {
-      font-size: 24px;
-      margin-bottom: 10px;
-      color: var(--dark-color);
-    }
-
-    .badge-content p {
-      margin-bottom: 20px;
-      color: var(--text-light);
-    }
-
-    /* Notification Messages */
-    .narrative-message {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background-color: var(--dark-color);
-      color: white;
-      padding: 12px 20px;
-      border-radius: 8px;
-      font-size: 14px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      z-index: 100;
-      opacity: 1;
-      transition: opacity 0.5s ease;
-      max-width: 80%;
-    }
-
-    .achievement-message {
-      background-color: white;
-      border-radius: 8px;
-      padding: 15px;
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      gap: 15px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      opacity: 1;
-      transition: opacity 0.5s ease;
-    }
-
-    .achievement-icon {
-      width: 40px;
-      height: 40px;
-      background-color: var(--warning-color);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-size: 18px;
-      flex-shrink: 0;
-    }
-
-    .achievement-content {
-      flex-grow: 1;
-    }
-
-    .achievement-content h3 {
-      font-size: 14px;
-      margin-bottom: 5px;
-      color: var(--dark-color);
-    }
-
-    .achievement-content p {
-      font-size: 13px;
-      color: var(--text-light);
-      margin-bottom: 5px;
-    }
-
-    .achievement-points {
-      font-size: 12px;
-      color: var(--warning-color);
-      font-weight: bold;
-    }
-
-    /* Tooltips */
-    .tooltip {
-      position: relative;
-      display: inline-block;
-    }
-
-    .tooltip .tooltiptext {
-      visibility: hidden;
-      width: 200px;
-      background-color: var(--dark-color);
-      color: #fff;
-      text-align: center;
-      border-radius: 6px;
-      padding: 8px;
-      position: absolute;
-      z-index: 1;
-      bottom: 125%;
-      left: 50%;
-      transform: translateX(-50%);
-      opacity: 0;
-      transition: opacity 0.3s;
-      font-size: 12px;
-      font-weight: normal;
-    }
-
-    .tooltip .tooltiptext::after {
-      content: "";
-      position: absolute;
-      top: 100%;
-      left: 50%;
-      margin-left: -5px;
-      border-width: 5px;
-      border-style: solid;
-      border-color: var(--dark-color) transparent transparent transparent;
-    }
-
-    .tooltip:hover .tooltiptext {
-      visibility: visible;
-      opacity: 1;
-    }
-
-    /* Responsive Design */
-    @media (max-width: 1200px) {
-      .dashboard-container {
-        grid-template-columns: 250px 1fr;
-      }
-      
-      .info-panel {
-        grid-column: span 2;
-      }
-    }
-
-    @media (max-width: 768px) {
-      .dashboard-container {
-        grid-template-columns: 1fr;
-      }
-      
-      .control-panel {
-        order: 2;
-      }
-      
-      .main-content {
-        order: 1;
-      }
-      
-      .info-panel {
-        order: 3;
-      }
-      
-      .app-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-      }
-      
-      .header-badges {
-        width: 100%;
-        justify-content: space-between;
-      }
-    }
-
-    @media (max-width: 480px) {
-      .button-group {
-        flex-direction: column;
-      }
-      
-      .tabs {
-        flex-wrap: wrap;
-      }
-      
-      .tab-btn {
-        flex: none;
-        width: 33.33%;
-      }
-    }
-
-    /* Animation classes */
-    @keyframes pulse {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-      100% { transform: scale(1); }
-    }
-
-    .pulse {
-      animation: pulse 2s infinite;
-    }
-
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-      20%, 40%, 60%, 80% { transform: translateX(5px); }
-    }
-
-    .shake {
-      animation: shake 0.5s;
-    }
-  </style>
-</head>
-<body>
-  <div class="app-container">
-    <header class="app-header">
-      <h1><i class="fas fa-leaf"></i> Tasmanian Ecosystem Simulator</h1>
-      <div class="header-badges">
-        <div class="points-badge">
-          <i class="fas fa-star"></i>
-          <span id="pointsDisplay">0</span> pts
-        </div>
-        <div id="medalIcon" class="ranger-medal" style="display:none">
-          <i class="fas fa-medal"></i>
-        </div>
-      </div>
-    </header>
-
-    <div class="dashboard-container">
-      <!-- Left Panel -->
-      <div class="control-panel">
-        <div class="panel-section">
-          <h2><i class="fas fa-sliders-h"></i> Ecosystem Controls</h2>
-          
-          <div class="control-group">
-            <label class="tooltip">
-              <span class="control-label"><i class="fas fa-cloud-rain"></i> Rainfall</span>
-              <span class="tooltiptext">Adjust annual rainfall. More rain helps grass grow but can lead to flooding.</span>
-            </label>
-            <input type="range" min="0" max="100" value="50" id="rainfall">
-            <span id="rainfallValue" class="slider-value">50</span>
-          </div>
-
-          <div class="control-group">
-            <label class="tooltip">
-              <span class="control-label"><i class="fas fa-temperature-high"></i> Temperature</span>
-              <span class="tooltiptext">Control average temperature. Higher temps stress some species but help others.</span>
-            </label>
-            <input type="range" min="0" max="50" value="25" id="temperature">
-            <span id="temperatureValue" class="slider-value">25</span>
-          </div>
-
-          <div class="control-group">
-            <label class="tooltip">
-              <span class="control-label"><i class="fas fa-bug"></i> Invasive Species</span>
-              <span class="tooltiptext">Simulate invasive species pressure. These compete with native species.</span>
-            </label>
-            <input type="range" min="0" max="20" value="5" id="invasiveSpecies">
-            <span id="invasiveSpeciesValue" class="slider-value">5</span>
-          </div>
-
-          <div class="control-group">
-            <label class="tooltip">
-              <span class="control-label"><i class="fas fa-user"></i> Human Impact</span>
-              <span class="tooltiptext">Human activities like development and hunting affect all species.</span>
-            </label>
-            <input type="range" min="0" max="10" value="2" id="humanImpact">
-            <span id="humanImpactValue" class="slider-value">2</span>
-          </div>
-
-          <div class="button-group">
-            <button id="resetButton" class="btn btn-secondary">
-              <i class="fas fa-redo"></i> Reset
-            </button>
-            <button id="pauseButton" class="btn btn-primary">
-              <i class="fas fa-pause"></i> Pause
-            </button>
-          </div>
-        </div>
-
-        <div class="panel-section">
-          <h2><i class="fas fa-cog"></i> Simulation Settings</h2>
-          <div class="toggle-group">
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggleSeasons" checked>
-              <span class="toggle-label"><i class="fas fa-calendar-alt"></i> Seasons</span>
-              <span class="toggle-slider"></span>
-            </label>
-            
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggleDisasters" checked>
-              <span class="toggle-label"><i class="fas fa-fire"></i> Disasters</span>
-              <span class="toggle-slider"></span>
-            </label>
-            
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggleGrassLimit" checked>
-              <span class="toggle-label"><i class="fas fa-flag"></i> Grass Limits</span>
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-
-          <div class="speed-control">
-            <label><i class="fas fa-tachometer-alt"></i> Speed</label>
-            <input type="range" id="speedSlider" min="0.1" max="5" step="0.1" value="1">
-            <span id="speedValue">1x</span>
-          </div>
-        </div>
-
-        <div class="panel-section ecosystem-health">
-          <h2><i class="fas fa-heartbeat"></i> Ecosystem Health</h2>
-          <div id="ecosystemHealth" class="health-meter">
-            <div class="health-status" style="width: 100%"></div>
-            <span class="health-text">Healthy</span>
-          </div>
-          <div class="health-metrics">
-            <div class="metric">
-              <span class="metric-label">Biodiversity:</span>
-              <span class="metric-value" id="biodiversityValue">0.00</span>
-            </div>
-            <div class="metric">
-              <span class="metric-label">Season:</span>
-              <span class="metric-value" id="seasonDisplay">Spring</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Main Content -->
-      <div class="main-content">
-        <div class="visualization-container">
-          <div id="canvas-container"></div>
-          <div id="disasterMessage" class="alert-message">
-            <i class="fas fa-exclamation-triangle"></i>
-            <span class="message-text"></span>
-          </div>
-        </div>
-
-        <div class="chart-container">
-          <canvas id="populationChart"></canvas>
-        </div>
-
-        <div class="objective-panel">
-          <h2><i class="fas fa-tasks"></i> Current Objective</h2>
-          <div id="objectiveDisplay" class="objective-text">
-            Increase pademelon population to 200
-          </div>
-          <div class="progress-container">
-            <div class="progress-bar" style="width: 0%"></div>
-            <span class="progress-text">0% complete</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Right Panel -->
-      <div class="info-panel">
-        <div class="tabs">
-          <button class="tab-btn active" data-tab="species"><i class="fas fa-paw"></i> Species</button>
-          <button class="tab-btn" data-tab="objectives"><i class="fas fa-trophy"></i> Achievements</button>
-          <button class="tab-btn" data-tab="learn"><i class="fas fa-book"></i> Learn</button>
-        </div>
-
-        <div class="tab-content active" id="species-tab">
-          <div class="species-card" data-species="grass">
-            <div class="species-icon" style="background-color: #4CAF50;">
-              <i class="fas fa-seedling"></i>
-            </div>
-            <h3>Grass <span class="species-count" id="grass-value">0</span></h3>
-            <p>Primary producer that supports the entire ecosystem.</p>
-            <div class="species-details">
-              <strong>Ecological Role:</strong> Primary producer, forms the base of the food web.
-              <br><strong>Key Facts:</strong>
-              <ul>
-                <li>Grows faster with more rainfall</li>
-                <li>Consumed by pademelons</li>
-                <li>Helped by bandicoot activity</li>
-              </ul>
-              <strong>Threats:</strong> Overgrazing, drought, invasive species
-            </div>
-          </div>
-          
-          <div class="species-card" data-species="pademelons">
-            <div class="species-icon" style="background-color: #FF9800;">
-              <i class="fas fa-kiwi-bird"></i>
-            </div>
-            <h3>Pademelons <span class="species-count" id="pademelons-value">0</span></h3>
-            <p>Herbivores that feed on grass and support predator populations.</p>
-            <div class="species-details">
-              <strong>Ecological Role:</strong> Primary consumer, prey species for devils.
-              <br><strong>Key Facts:</strong>
-              <ul>
-                <li>Population controlled by devil predation</li>
-                <li>Thrives in areas with dense grass cover</li>
-                <li>Sensitive to temperature extremes</li>
-              </ul>
-              <strong>Threats:</strong> Overpredation, habitat loss, climate change
-            </div>
-          </div>
-          
-          <div class="species-card" data-species="devils">
-            <div class="species-icon" style="background-color: #F44336;">
-              <i class="fas fa-paw"></i>
-            </div>
-            <h3>Tasmanian Devils <span class="species-count" id="devils-value">0</span></h3>
-            <p>Apex predators that control pademelon population.</p>
-            <div class="species-details">
-              <strong>Ecological Role:</strong> Apex predator, regulates herbivore populations.
-              <br><strong>Key Facts:</strong>
-              <ul>
-                <li>Population limited by available prey</li>
-                <li>Vulnerable to facial tumor disease</li>
-                <li>Important for ecosystem balance</li>
-              </ul>
-              <strong>Threats:</strong> Disease, habitat fragmentation, road mortality
-            </div>
-          </div>
-          
-          <div class="species-card" data-species="bandicoots">
-            <div class="species-icon" style="background-color: #FFEB3B;">
-              <i class="fas fa-spider"></i>
-            </div>
-            <h3>Bandicoots <span class="species-count" id="bandicoots-value">0</span></h3>
-            <p>Keystone species that improve soil health and grass growth.</p>
-            <div class="species-details">
-              <strong>Ecological Role:</strong> Ecosystem engineer, improves soil health.
-              <br><strong>Key Facts:</strong>
-              <ul>
-                <li>Their digging aerates soil and helps grass grow</li>
-                <li>Competes with pademelons for resources</li>
-                <li>Preyed upon by devils</li>
-              </ul>
-              <strong>Threats:</strong> Predation, habitat loss, invasive species
-            </div>
-          </div>
-        </div>
-
-        <div class="tab-content" id="objectives-tab">
-          <div id="achievementsContainer" class="achievements-grid">
-            <div class="achievement-item">
-              <i class="fas fa-trophy"></i>
-              <div class="achievement-text">Complete all 5 main objectives to unlock the Ecosystem Guardian achievement</div>
-            </div>
-            <div class="achievement-item">
-              <i class="fas fa-fire"></i>
-              <div class="achievement-text">Survive 8 natural disasters to earn the Disaster Survivor achievement</div>
-            </div>
-            <div class="achievement-item">
-              <i class="fas fa-balance-scale"></i>
-              <div class="achievement-text">Maintain balanced populations for 1500 frames to earn the Balance Keeper achievement</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="tab-content" id="learn-tab">
-          <div class="learn-section">
-            <h3><i class="fas fa-question-circle"></i> Quick Quiz</h3>
-            <div class="quiz-question">
-              <p>What happens when devil populations grow too large?</p>
-              <button class="quiz-btn" onclick="document.getElementById('quiz1-answer').style.display='block'">Show Answer</button>
-              <p id="quiz1-answer" class="quiz-answer" style="display:none">They overhunt pademelons, leading to grass overgrowth and eventual ecosystem collapse.</p>
-            </div>
-            <div class="quiz-question">
-              <p>Why are bandicoots considered a keystone species?</p>
-              <button class="quiz-btn" onclick="document.getElementById('quiz2-answer').style.display='block'">Show Answer</button>
-              <p id="quiz2-answer" class="quiz-answer" style="display:none">Their digging aerates soil and improves grass growth, benefiting the entire ecosystem.</p>
-            </div>
-          </div>
-          
-          <div class="learn-section">
-            <h3><i class="fas fa-lightbulb"></i> Did You Know?</h3>
-            <p>Bandicoots are ecosystem engineers - their digging aerates soil and helps grass grow 15-20% faster!</p>
-            <p>Tasmanian devils have the strongest bite force relative to body size of any living carnivorous mammal.</p>
-          </div>
-          
-          <div class="learn-section">
-            <h3><i class="fas fa-book-open"></i> Ecosystem Facts</h3>
-            <p>Healthy ecosystems maintain balance through predator-prey relationships. When one species declines, it affects all others in the food web.</p>
-            <p>Biodiversity is a key indicator of ecosystem health. More diverse ecosystems are more resilient to disturbances.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div id="rangerBadge" class="ranger-badge-modal" style="display: none;">
-      <div class="badge-content">
-        <div class="badge-icon">
-          <i class="fas fa-medal"></i>
-        </div>
-        <h2>Ranger Badge Earned!</h2>
-        <p>Congratulations on maintaining a balanced ecosystem! You've demonstrated excellent ecological management skills.</p>
-        <button class="btn btn-primary" onclick="document.getElementById('rangerBadge').classList.remove('show')">Continue</button>
-      </div>
-    </div>
-  </div>
-
-  <script>
+<script>
     // Initialize the simulation when page loads
     document.addEventListener('DOMContentLoaded', function() {
       const ecosystemSimulator = function(p) {
@@ -1274,37 +41,37 @@
         // Learning objectives
         let objectives = [
           { 
-            description: "Increase pademelon population to 200", 
-            target: 200, 
+            description: "Increase pademelon population to 150", 
+            target: 150, 
             achieved: false, 
             points: 200, 
             type: "pademelons" 
           },
           { 
-            description: "Maintain devil population > 100 with grass > 400", 
-            target: 100, 
+            description: "Maintain devil population > 60 with grass > 300", 
+            target: 60, 
             achieved: false, 
             points: 300, 
             type: "apex_stability" 
           },
           { 
-            description: "Trigger bandicoot-driven grass recovery (50% increase)", 
-            target: 1.5, 
+            description: "Trigger bandicoot-driven grass recovery (reach 300 grass)", 
+            target: 300, 
             achieved: false, 
             points: 200, 
             type: "keystone_effect" 
           },
           { 
-            description: "Survive 8 natural disasters", 
-            target: 8, 
+            description: "Survive 5 natural disasters", 
+            target: 5, 
             achieved: false, 
             points: 100, 
             count: 0, 
             type: "disasters" 
           },
           { 
-            description: "Maintain biodiversity index > 0.7 for 1000 frames", 
-            target: 1000, 
+            description: "Maintain biodiversity index > 0.6 for 500 frames", 
+            target: 500, 
             achieved: false, 
             points: 150, 
             type: "biodiversity" 
@@ -1321,12 +88,12 @@
             condition: (g) => g > 700 
           },
           { 
-            description: "Keep devil population > 70 for 800 frames", 
+            description: "Keep devil population > 50 for 800 frames", 
             target: 800, 
             achieved: false, 
             points: 300, 
             type: "devils", 
-            condition: (d) => d > 70 
+            condition: (d) => d > 50 
           },
           { 
             description: "Maintain balanced ecosystem for 1500 frames", 
@@ -1334,7 +101,7 @@
             achieved: false, 
             points: 500, 
             type: "balanced", 
-            condition: (g, p, d, b) => g > 500 && p > 100 && d > 50 && b > 100 
+            condition: (g, p, d, b) => g > 400 && p > 60 && d > 25 && b > 30 
           }
         ];
 
@@ -1354,7 +121,7 @@
           { 
             description: "Keystone Keeper: Double bandicoot population from starting value", 
             achieved: false, 
-            target: 60, 
+            target: 80, 
             points: 200 
           }
         ];
@@ -1427,7 +194,7 @@
           const deltaTime = now - lastFrameTime;
           lastFrameTime = now;
           
-          // Only update when not paused and enough time has passed for current speed
+          // Only update when not paused
           if (!isPaused) {
             // Update based on speed multiplier
             for (let i = 0; i < speedMultiplier; i++) {
@@ -1570,510 +337,479 @@
           });
         }
 
-        // Reset simulation to initial state
-        function resetSim() {
-          // Reset populations - ensure they're healthy starting values
-          grass = 800;
-          pademelons = 120;
-          devils = 45;
-          bandicoots = 60;
+        // Main update function
+        function update() {
+          // Seasonal changes
+          updateSeasons();
           
-          // Reset particles
-          grassParticles = [];
-          pademelonParticles = [];
-          devilParticles = [];
-          bandicootParticles = [];
+          // Get environmental factors
+          const rainfall = getModifiedRainfall();
+          const temperature = getModifiedTemperature();
+          const invasiveSpecies = parseFloat(document.getElementById("invasiveSpecies").value);
+          const humanImpact = parseFloat(document.getElementById("humanImpact").value);
           
-          // Reset tracking variables
-          customFrameCount = 0;
-          lastFrameTime = performance.now();
-          points = 0;
-          ecosystemHealth = 100;
-          biodiversityIndex = 0;
-          maxGrass = 0;
-          maxPademelons = 0;
-          maxDevils = 0;
-          maxBandicoots = 0;
+          // Update populations with balanced dynamics
+          updateGrass(rainfall, invasiveSpecies);
+          updatePademelons(temperature, humanImpact, invasiveSpecies);
+          updateBandicoots(temperature, invasiveSpecies, humanImpact);
+          updateDevils(humanImpact, temperature);
           
-          // Reset objectives
-          objectives.forEach(obj => obj.achieved = false);
-          ongoingObjectives.forEach(obj => {
-            obj.achieved = false;
-            obj.target = obj.type === "balanced" ? 1500 : 800;
-          });
-          achievements.forEach(ach => ach.achieved = false);
+          // Apply gentle population limits
+          applyLimits();
           
-          // Reset chart
-          if (chart) {
-            chart.data.labels = [];
-            chart.data.datasets.forEach(dataset => dataset.data = []);
-            chart.update();
-          }
+          // Update particle effects
+          updateParticles();
           
-          populationHistory = [];
+          // Track history
+          updateHistory();
           
-          // Reset sliders to default
-          document.getElementById("rainfall").value = 50;
-          document.getElementById("rainfallValue").textContent = "50";
-          document.getElementById("temperature").value = 25;
-          document.getElementById("temperatureValue").textContent = "25";
-          document.getElementById("invasiveSpecies").value = 5;
-          document.getElementById("invasiveSpeciesValue").textContent = "5";
-          document.getElementById("humanImpact").value = 2;
-          document.getElementById("humanImpactValue").textContent = "2";
+          // Check for events and objectives
+          checkRandomEvents();
+          checkObjectives();
+          updateEcosystemMetrics();
           
-          // Reset season
-          season = 0;
-          targetRainfall = currentRainfall = seasonParams[season].rainfall;
-          targetTemperature = currentTemperature = seasonParams[season].temperature;
-          seasonDisplay.textContent = seasonParams[season].name;
-          
-          // Update UI
-          updateUI();
+          // Update displays
+          updateSpeciesDisplays();
         }
 
-// Update simulation state - REPLACE the update functions with these balanced versions
-function update() {
-  // Seasonal changes
-  updateSeasons();
-  
-  // Get environmental factors
-  const rainfall = getModifiedRainfall();
-  const temperature = getModifiedTemperature();
-  const invasiveSpecies = parseFloat(document.getElementById("invasiveSpecies").value);
-  const humanImpact = parseFloat(document.getElementById("humanImpact").value);
-  
-  // Update populations with CORRECTED balanced dynamics
-  updateGrass(rainfall, invasiveSpecies);
-  updatePademelons(temperature, humanImpact, invasiveSpecies);
-  updateBandicoots(temperature, invasiveSpecies, humanImpact);
-  updateDevils(humanImpact, temperature);
-  
-  // Apply gentle population limits
-  applyLimits();
-  
-  // Update particle effects
-  updateParticles();
-  
-  // Track history
-  updateHistory();
-  
-  // Check for events and objectives
-  checkRandomEvents();
-  checkObjectives();
-  updateEcosystemMetrics();
-  
-  // Update displays
-  updateSpeciesDisplays();
-}
+        // Update seasonal changes
+        function updateSeasons() {
+          if (showSeasons) {
+            if (customFrameCount % seasonDuration === 0) {
+              season = (season + 1) % 4;
+              seasonDisplay.textContent = seasonParams[season].name;
+              targetRainfall = seasonParams[season].rainfall;
+              targetTemperature = seasonParams[season].temperature;
+            }
+            
+            // Smooth seasonal transitions
+            currentRainfall += (targetRainfall - currentRainfall) * interpolationSpeed;
+            currentTemperature += (targetTemperature - currentTemperature) * interpolationSpeed;
+          } else {
+            // When seasons are off, maintain baseline conditions
+            seasonDisplay.textContent = "None";
+            targetRainfall = 50;
+            targetTemperature = 25;
+            currentRainfall = targetRainfall;
+            currentTemperature = targetTemperature;
+          }
+        }
 
-// FIXED: Grass should grow easily but be limited by grazing
-function updateGrass(rainfall, invasiveSpecies) {
-  // Base growth - grass grows quickly with good rainfall
-  const rainfallFactor = 0.5 + (rainfall / 100); // 0.5 to 1.5
-  
-  // Bandicoots help grass grow (up to 50% boost)
-  const bandicootBoost = 1 + (bandicoots / 400); // Max 1.75 with 300 bandicoots
-  
-  // Natural growth (5-15% per frame)
-  const growth = grass * 0.08 * rainfallFactor * bandicootBoost;
-  
-  // Grazing by pademelons (each pademelon eats some grass)
-  const grazing = pademelons * 0.5;
-  
-  // Invasive species compete with grass
-  const invasiveEffect = invasiveSpecies * 2;
-  
-  // Update grass
-  grass = grass + growth - grazing - invasiveEffect;
-  
-  // Apply limits
-  if (grassLimitEnabled) {
-    grass = Math.min(grass, 1500);
-  } else {
-    grass = Math.min(grass, 2500);
-  }
-  grass = Math.max(grass, 50); // Keep minimum grass
-  
-  // Particle effects
-  if (growth > grazing && Math.random() < 0.05) {
-    grassParticles.push({
-      x: p.random(p.width),
-      y: p.height/2,
-      size: p.random(5, 10),
-      life: 100,
-      vx: p.random(-1, 1),
-      vy: p.random(-2, -1)
-    });
-  }
-}
+        // Get modified rainfall value
+        function getModifiedRainfall() {
+          const rainfallSlider = parseFloat(document.getElementById("rainfall").value) - 50;
+          return Math.max(0, currentRainfall + rainfallSlider);
+        }
 
-// FIXED: Pademelons should grow well but be controlled by devils
-function updatePademelons(temperature, humanImpact, invasiveSpecies) {
-  // Food availability - more grass means more pademelons
-  const foodFactor = Math.min(2, grass / 400); // 0.5 to 2.0
-  
-  // Natural growth rate (5-15% per frame)
-  const births = pademelons * 0.06 * foodFactor;
-  
-  // Deaths from various causes
-  const predation = devils * 0.3; // Each devil eats some pademelons
-  const tempStress = Math.abs(temperature - 20) * 0.5; // Temperature stress
-  const hunting = humanImpact * 1.5;
-  const invasiveCompetition = invasiveSpecies * 1;
-  
-  // Natural mortality
-  const naturalDeaths = pademelons * 0.02;
-  
-  // Update pademelons
-  pademelons = pademelons + births - predation - tempStress - hunting - invasiveCompetition - naturalDeaths;
-  
-  // Keep within reasonable bounds
-  pademelons = Math.min(pademelons, 400);
-  pademelons = Math.max(pademelons, 20);
-  
-  // Particle effects
-  if (births > predation && Math.random() < 0.03) {
-    pademelonParticles.push({
-      x: p.random(p.width),
-      y: p.height/2,
-      size: p.random(8, 12),
-      life: 100,
-      vx: p.random(-1, 1),
-      vy: p.random(-1, 0)
-    });
-  }
-}
+        // Get modified temperature value
+        function getModifiedTemperature() {
+          const tempSlider = parseFloat(document.getElementById("temperature").value) - 25;
+          return Math.max(0, currentTemperature + tempSlider);
+        }
 
-// FIXED: Bandicoots should be resilient but compete with pademelons
-function updateBandicoots(temperature, invasiveSpecies, humanImpact) {
-  // Bandicoots benefit from grass but also compete with pademelons
-  const foodFactor = Math.min(2, grass / 300);
-  const competition = pademelons * 0.1; // Competition with pademelons
-  
-  // Natural growth
-  const births = bandicoots * 0.05 * foodFactor;
-  
-  // Deaths
-  const predation = devils * 0.15; // Devils eat some bandicoots
-  const tempStress = Math.abs(temperature - 22) * 0.4;
-  const hunting = humanImpact * 1;
-  const invasiveEffect = invasiveSpecies * 0.8;
-  const naturalDeaths = bandicoots * 0.02;
-  
-  // Update bandicoots
-  bandicoots = bandicoots + births - predation - tempStress - hunting - invasiveEffect - competition - naturalDeaths;
-  
-  // Keep within bounds
-  bandicoots = Math.min(bandicoots, 300);
-  bandicoots = Math.max(bandicoots, 15);
-  
-  // Particle effects
-  if (births > predation && Math.random() < 0.02) {
-    bandicootParticles.push({
-      x: p.random(p.width),
-      y: p.height/2,
-      size: p.random(6, 10),
-      life: 100,
-      vx: p.random(-0.5, 0.5),
-      vy: p.random(-0.5, 0.5)
-    });
-  }
-}
+        // Update grass population
+        function updateGrass(rainfall, invasiveSpecies) {
+          // Base growth - grass grows quickly with good rainfall
+          const rainfallFactor = 0.5 + (rainfall / 100); // 0.5 to 1.5
+          
+          // Bandicoots help grass grow (up to 50% boost)
+          const bandicootBoost = 1 + (bandicoots / 400); // Max 1.75 with 300 bandicoots
+          
+          // Natural growth (5-15% per frame)
+          const growth = grass * 0.08 * rainfallFactor * bandicootBoost;
+          
+          // Grazing by pademelons (each pademelon eats some grass)
+          const grazing = pademelons * 0.5;
+          
+          // Invasive species compete with grass
+          const invasiveEffect = invasiveSpecies * 2;
+          
+          // Update grass
+          grass = grass + growth - grazing - invasiveEffect;
+          
+          // Apply limits
+          if (grassLimitEnabled) {
+            grass = Math.min(grass, 1500);
+          } else {
+            grass = Math.min(grass, 2500);
+          }
+          grass = Math.max(grass, 50); // Keep minimum grass
+          
+          // Particle effects
+          if (growth > grazing && Math.random() < 0.05) {
+            grassParticles.push({
+              x: p.random(p.width),
+              y: p.height/2,
+              size: p.random(5, 10),
+              life: 100,
+              vx: p.random(-1, 1),
+              vy: p.random(-2, -1)
+            });
+          }
+        }
 
-// FIXED: Devils should be limited by prey availability
-function updateDevils(humanImpact, temperature) {
-  // Food availability based on prey
-  const preyTotal = pademelons + bandicoots;
-  const foodFactor = Math.min(2, preyTotal / 150); // 0.5 to 2.0
-  
-  // Natural growth - devils reproduce slowly
-  const births = devils * 0.03 * foodFactor;
-  
-  // Deaths
-  const starvation = devils * (1 - Math.min(1, preyTotal / 100)) * 0.1;
-  const tempStress = Math.abs(temperature - 18) * 0.3;
-  const hunting = humanImpact * 0.8;
-  const naturalDeaths = devils * 0.02;
-  
-  // Update devils
-  devils = devils + births - starvation - tempStress - hunting - naturalDeaths;
-  
-  // Carrying capacity based on prey
-  const maxDevils = (pademelons * 0.2) + (bandicoots * 0.1);
-  devils = Math.min(devils, Math.max(10, maxDevils));
-  
-  // Keep minimum population
-  devils = Math.max(devils, 5);
-  
-  // Particle effects
-  if (births > naturalDeaths && Math.random() < 0.01) {
-    devilParticles.push({
-      x: p.random(p.width),
-      y: p.height/2,
-      size: p.random(10, 15),
-      life: 100,
-      vx: p.random(-0.5, 0.5),
-      vy: p.random(-0.5, 0.5)
-    });
-  }
-}
+        // Update pademelon population
+        function updatePademelons(temperature, humanImpact, invasiveSpecies) {
+          // Food availability - more grass means more pademelons
+          const foodFactor = Math.min(2, grass / 400); // 0.5 to 2.0
+          
+          // Natural growth rate
+          const births = pademelons * 0.06 * foodFactor;
+          
+          // Deaths from various causes
+          const predation = devils * 0.3; // Each devil eats some pademelons
+          const tempStress = Math.abs(temperature - 20) * 0.5;
+          const hunting = humanImpact * 1.5;
+          const invasiveCompetition = invasiveSpecies * 1;
+          const naturalDeaths = pademelons * 0.02;
+          
+          // Update pademelons
+          pademelons = pademelons + births - predation - tempStress - hunting - invasiveCompetition - naturalDeaths;
+          
+          // Keep within reasonable bounds
+          pademelons = Math.min(pademelons, 400);
+          pademelons = Math.max(pademelons, 20);
+          
+          // Particle effects
+          if (births > predation && Math.random() < 0.03) {
+            pademelonParticles.push({
+              x: p.random(p.width),
+              y: p.height/2,
+              size: p.random(8, 12),
+              life: 100,
+              vx: p.random(-1, 1),
+              vy: p.random(-1, 0)
+            });
+          }
+        }
 
-// Gentler limits
-function applyLimits() {
-  // Soft caps - allow natural fluctuation but prevent extremes
-  grass = Math.min(grass, grassLimitEnabled ? 1500 : 2500);
-  grass = Math.max(grass, 50);
-  
-  pademelons = Math.min(pademelons, 400);
-  pademelons = Math.max(pademelons, 15);
-  
-  devils = Math.min(devils, 120);
-  devils = Math.max(devils, 3);
-  
-  bandicoots = Math.min(bandicoots, 300);
-  bandicoots = Math.max(bandicoots, 10);
-}
+        // Update bandicoot population
+        function updateBandicoots(temperature, invasiveSpecies, humanImpact) {
+          // Bandicoots benefit from grass but compete with pademelons
+          const foodFactor = Math.min(2, grass / 300);
+          const competition = pademelons * 0.1;
+          
+          // Natural growth
+          const births = bandicoots * 0.05 * foodFactor;
+          
+          // Deaths
+          const predation = devils * 0.15;
+          const tempStress = Math.abs(temperature - 22) * 0.4;
+          const hunting = humanImpact * 1;
+          const invasiveEffect = invasiveSpecies * 0.8;
+          const naturalDeaths = bandicoots * 0.02;
+          
+          // Update bandicoots
+          bandicoots = bandicoots + births - predation - tempStress - hunting - invasiveEffect - competition - naturalDeaths;
+          
+          // Keep within bounds
+          bandicoots = Math.min(bandicoots, 300);
+          bandicoots = Math.max(bandicoots, 15);
+          
+          // Particle effects
+          if (births > predation && Math.random() < 0.02) {
+            bandicootParticles.push({
+              x: p.random(p.width),
+              y: p.height/2,
+              size: p.random(6, 10),
+              life: 100,
+              vx: p.random(-0.5, 0.5),
+              vy: p.random(-0.5, 0.5)
+            });
+          }
+        }
 
-// Update resetSim with more balanced starting values
-function resetSim() {
-  // Reset populations - more balanced starting point
-  grass = 600;
-  pademelons = 80;
-  devils = 25;
-  bandicoots = 40;
-  
-  // Reset particles
-  grassParticles = [];
-  pademelonParticles = [];
-  devilParticles = [];
-  bandicootParticles = [];
-  
-  // Reset tracking variables
-  customFrameCount = 0;
-  lastFrameTime = performance.now();
-  points = 0;
-  ecosystemHealth = 100;
-  biodiversityIndex = 0;
-  
-  // Reset objectives
-  objectives.forEach(obj => {
-    obj.achieved = false;
-    if (obj.type === "disasters") obj.count = 0;
-  });
-  
-  ongoingObjectives.forEach(obj => {
-    obj.achieved = false;
-    obj.target = obj.type === "balanced" ? 1500 : 800;
-  });
-  
-  achievements.forEach(ach => ach.achieved = false);
-  
-  // Reset chart
-  if (chart) {
-    chart.data.labels = [];
-    chart.data.datasets.forEach(dataset => dataset.data = []);
-    chart.update();
-  }
-  
-  populationHistory = [];
-  
-  // Reset sliders to default
-  document.getElementById("rainfall").value = 50;
-  document.getElementById("rainfallValue").textContent = "50";
-  document.getElementById("temperature").value = 25;
-  document.getElementById("temperatureValue").textContent = "25";
-  document.getElementById("invasiveSpecies").value = 5;
-  document.getElementById("invasiveSpeciesValue").textContent = "5";
-  document.getElementById("humanImpact").value = 2;
-  document.getElementById("humanImpactValue").textContent = "2";
-  
-  // Reset season
-  season = 0;
-  targetRainfall = currentRainfall = seasonParams[season].rainfall;
-  targetTemperature = currentTemperature = seasonParams[season].temperature;
-  seasonDisplay.textContent = seasonParams[season].name;
-  
-  // Update UI
-  updateUI();
-  
-  showNarrativeMessage("🌱 Ecosystem reset to balanced state");
-}
+        // Update devil population
+        function updateDevils(humanImpact, temperature) {
+          // Food availability based on prey
+          const preyTotal = pademelons + bandicoots;
+          const foodFactor = Math.min(2, preyTotal / 150);
+          
+          // Natural growth - devils reproduce slowly
+          const births = devils * 0.03 * foodFactor;
+          
+          // Deaths
+          const starvation = devils * (1 - Math.min(1, preyTotal / 100)) * 0.1;
+          const tempStress = Math.abs(temperature - 18) * 0.3;
+          const hunting = humanImpact * 0.8;
+          const naturalDeaths = devils * 0.02;
+          
+          // Update devils
+          devils = devils + births - starvation - tempStress - hunting - naturalDeaths;
+          
+          // Carrying capacity based on prey
+          const maxDevils = (pademelons * 0.2) + (bandicoots * 0.1);
+          devils = Math.min(devils, Math.max(10, maxDevils));
+          
+          // Keep minimum population
+          devils = Math.max(devils, 5);
+          
+          // Particle effects
+          if (births > naturalDeaths && Math.random() < 0.01) {
+            devilParticles.push({
+              x: p.random(p.width),
+              y: p.height/2,
+              size: p.random(10, 15),
+              life: 100,
+              vx: p.random(-0.5, 0.5),
+              vy: p.random(-0.5, 0.5)
+            });
+          }
+        }
 
-// Make objectives easier to achieve
-function checkObjectives() {
-  // Standard objectives - with lower targets
-  objectives.forEach(obj => {
-    if (obj.achieved) return;
-    
-    let isAchieved = false;
-    switch(obj.type) {
-      case "pademelons":
-        isAchieved = pademelons >= 150; // Lowered from 200
-        break;
-      case "apex_stability":
-        isAchieved = devils >= 60 && grass > 300; // Lowered from 100 devils
-        break;
-      case "keystone_effect":
-        isAchieved = grass >= 300; // Bandicoots helping grass reach 300
-        break;
-      case "disasters":
-        isAchieved = (obj.count || 0) >= 5; // Lowered from 8
-        break;
-      case "biodiversity":
-        isAchieved = biodiversityIndex > 0.6 && customFrameCount >= 500; // Easier
-        break;
-    }
-    
-    if (isAchieved) {
-      obj.achieved = true;
-      points += obj.points;
-      showAchievement(obj.description, obj.points);
-    }
-  });
-  
-  // Ongoing objectives - with longer time but easier conditions
-  ongoingObjectives.forEach(obj => {
-    if (obj.achieved) return;
-    
-    let conditionMet = false;
-    switch(obj.type) {
-      case "grass":
-        conditionMet = obj.condition(grass); // Already >700
-        break;
-      case "devils":
-        conditionMet = devils > 50; // Lowered from 70
-        break;
-      case "balanced":
-        conditionMet = grass > 400 && pademelons > 60 && devils > 25 && bandicoots > 30; // Easier
-        break;
-    }
-    
-    if (conditionMet) {
-      obj.target--;
-      if (obj.target <= 0) {
-        obj.achieved = true;
-        points += obj.points;
-        showAchievement(obj.description, obj.points);
-      }
-    } else {
-      // Reset progress more slowly
-      if (obj.target < (obj.type === "balanced" ? 1500 : 800)) {
-        obj.target += 5; // Slow recovery
-      }
-    }
-  });
-  
-  // Achievements
-  checkAchievements();
-}
+        // Apply gentle population limits
+        function applyLimits() {
+          grass = Math.min(grass, grassLimitEnabled ? 1500 : 2500);
+          grass = Math.max(grass, 50);
+          
+          pademelons = Math.min(pademelons, 400);
+          pademelons = Math.max(pademelons, 15);
+          
+          devils = Math.min(devils, 120);
+          devils = Math.max(devils, 3);
+          
+          bandicoots = Math.min(bandicoots, 300);
+          bandicoots = Math.max(bandicoots, 10);
+        }
 
-// Make disasters less destructive
-function triggerRandomEvent() {
-  const events = [
-    { 
-      name: "Bushfire", 
-      effect: () => {
-        grass *= 0.7; // Less destructive (was 0.3)
-        pademelons *= 0.85; // Less destructive
-        devils *= 0.95;
-        bandicoots *= 0.9;
-        showEventMessage("🔥 Small bushfire affected the ecosystem", "#e74c3c");
-      }
-    },
-    {
-      name: "Devil Facial Tumor Disease",
-      effect: () => {
-        const diseaseSeverity = Math.random() * 0.2 + 0.1; // 10-30% reduction (was 20-50%)
-        devils *= (1 - diseaseSeverity);
-        showEventMessage(`🦠 Devil disease outbreak affected ${Math.round(diseaseSeverity * 100)}% of population`, "#9b59b6");
-      }
-    },
-    {
-      name: "Drought",
-      effect: () => {
-        targetRainfall *= 0.7; // Less severe
-        showEventMessage("💧 Mild drought reducing rainfall", "#3498db");
-      }
-    },
-    {
-      name: "Flood",
-      effect: () => {
-        grass *= 0.85;
-        pademelons *= 0.9;
-        showEventMessage("🌊 Seasonal flooding affected low-lying areas", "#3498db");
-      }
-    },
-    {
-      name: "Heat Wave",
-      effect: () => {
-        targetTemperature += 5;
-        showEventMessage("☀️ Short heat wave affecting the ecosystem", "#f39c12");
-      }
-    }
-  ];
-  
-  const event = events[Math.floor(Math.random() * events.length)];
-  event.effect();
-  disasterFrame = customFrameCount;
-  
-  // Update disaster counters
-  const disasterObj = objectives.find(obj => obj.type === "disasters");
-  if (disasterObj) {
-    disasterObj.count = (disasterObj.count || 0) + 1;
-  }
-}
+        // Update population history and chart
+        function updateHistory() {
+          populationHistory.push({
+            frame: customFrameCount,
+            grass: grass,
+            pademelons: pademelons,
+            devils: devils,
+            bandicoots: bandicoots
+          });
+          
+          if (populationHistory.length > historyLength) {
+            populationHistory.shift();
+          }
+          
+          chart.data.labels.push(customFrameCount);
+          chart.data.datasets[0].data.push(grass);
+          chart.data.datasets[1].data.push(pademelons);
+          chart.data.datasets[2].data.push(devils);
+          chart.data.datasets[3].data.push(bandicoots);
+          
+          if (chart.data.labels.length > 100) {
+            chart.data.labels.shift();
+            chart.data.datasets.forEach(dataset => dataset.data.shift());
+          }
+          
+          chart.update();
+        }
 
-// Better narrative messages for feedback
-function triggerNarrativeEvent() {
-  const messages = [];
-  
-  // Helpful feedback messages
-  if (grass > 1000) {
-    messages.push("🌿 Grass is thriving! Great growing conditions");
-  } else if (grass < 200) {
-    messages.push("⚠️ Grass is low - consider increasing rainfall or reducing grazing");
-  }
-  
-  if (pademelons > 250) {
-    messages.push("🦘 Pademelon population is booming! Devils should increase soon");
-  } else if (pademelons < 40) {
-    messages.push("🦘 Pademelons need help - check predation and food supply");
-  }
-  
-  if (devils > 80) {
-    messages.push("🦊 Devil population is high - they're controlling herbivores well");
-  } else if (devils < 15) {
-    messages.push("🦊 Low devil numbers - pademelons may overpopulate");
-  }
-  
-  if (bandicoots > 150) {
-    messages.push("🐾 Bandicoots are engineering the soil! Grass growth boosted");
-  } else if (bandicoots < 25) {
-    messages.push("🐾 Bandicoot numbers are low - soil health may suffer");
-  }
-  
-  // Balance messages
-  const predatorPreyRatio = pademelons / (devils + 1);
-  if (predatorPreyRatio > 8) {
-    messages.push("⚖️ Too many pademelons per devil - predators need help");
-  } else if (predatorPreyRatio < 3 && pademelons > 50) {
-    messages.push("⚖️ Good predator-prey balance!");
-  }
-  
-  if (messages.length > 0) {
-    showNarrativeMessage(messages[Math.floor(Math.random() * messages.length)]);
-  } else {
-    // Default encouraging messages
-    const encouragements = [
-      "🌱 Your ecosystem is developing nicely",
-      "🦋 Biodiversity is increasing",
-      "⭐ Keep up the good management!",
-      "🌍 A balanced ecosystem is emerging"
-    ];
-    showNarrativeMessage(encouragements[Math.floor(Math.random() * encouragements.length)]);
-  }
-}
+        // Update particle effects
+        function updateParticles() {
+          grassParticles = grassParticles.filter(p => {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.life--;
+            return p.life > 0;
+          });
+          
+          pademelonParticles = pademelonParticles.filter(p => {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.life--;
+            return p.life > 0;
+          });
+          
+          devilParticles = devilParticles.filter(p => {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.life--;
+            return p.life > 0;
+          });
+          
+          bandicootParticles = bandicootParticles.filter(p => {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.life--;
+            return p.life > 0;
+          });
+        }
+
+        // Check for random events
+        function checkRandomEvents() {
+          if (showDisasters && customFrameCount % 1000 === 0 && Math.random() < 0.3) {
+            triggerRandomEvent();
+          }
+          
+          if (customFrameCount % 750 === 0) {
+            triggerNarrativeEvent();
+          }
+        }
+
+        // Trigger random ecosystem event
+        function triggerRandomEvent() {
+          const events = [
+            { 
+              name: "Bushfire", 
+              effect: () => {
+                grass *= 0.7;
+                pademelons *= 0.85;
+                devils *= 0.95;
+                bandicoots *= 0.9;
+                showEventMessage("🔥 Small bushfire affected the ecosystem", "#e74c3c");
+              }
+            },
+            {
+              name: "Devil Facial Tumor Disease",
+              effect: () => {
+                const diseaseSeverity = Math.random() * 0.2 + 0.1;
+                devils *= (1 - diseaseSeverity);
+                showEventMessage(`🦠 Devil disease outbreak affected ${Math.round(diseaseSeverity * 100)}% of population`, "#9b59b6");
+              }
+            },
+            {
+              name: "Drought",
+              effect: () => {
+                targetRainfall *= 0.7;
+                showEventMessage("💧 Mild drought reducing rainfall", "#3498db");
+              }
+            },
+            {
+              name: "Flood",
+              effect: () => {
+                grass *= 0.85;
+                pademelons *= 0.9;
+                showEventMessage("🌊 Seasonal flooding affected low-lying areas", "#3498db");
+              }
+            },
+            {
+              name: "Heat Wave",
+              effect: () => {
+                targetTemperature += 5;
+                showEventMessage("☀️ Short heat wave affecting the ecosystem", "#f39c12");
+              }
+            }
+          ];
+          
+          const event = events[Math.floor(Math.random() * events.length)];
+          event.effect();
+          disasterFrame = customFrameCount;
+          
+          const disasterObj = objectives.find(obj => obj.type === "disasters");
+          if (disasterObj) {
+            disasterObj.count = (disasterObj.count || 0) + 1;
+          }
+        }
+
+        // Trigger narrative event
+        function triggerNarrativeEvent() {
+          const messages = [];
+          
+          if (grass > 1000) {
+            messages.push("🌿 Grass is thriving! Great growing conditions");
+          } else if (grass < 200) {
+            messages.push("⚠️ Grass is low - consider increasing rainfall or reducing grazing");
+          }
+          
+          if (pademelons > 250) {
+            messages.push("🦘 Pademelon population is booming! Devils should increase soon");
+          } else if (pademelons < 40) {
+            messages.push("🦘 Pademelons need help - check predation and food supply");
+          }
+          
+          if (devils > 80) {
+            messages.push("🦊 Devil population is high - they're controlling herbivores well");
+          } else if (devils < 15) {
+            messages.push("🦊 Low devil numbers - pademelons may overpopulate");
+          }
+          
+          if (bandicoots > 150) {
+            messages.push("🐾 Bandicoots are engineering the soil! Grass growth boosted");
+          } else if (bandicoots < 25) {
+            messages.push("🐾 Bandicoot numbers are low - soil health may suffer");
+          }
+          
+          const predatorPreyRatio = pademelons / (devils + 1);
+          if (predatorPreyRatio > 8) {
+            messages.push("⚖️ Too many pademelons per devil - predators need help");
+          } else if (predatorPreyRatio < 3 && pademelons > 50) {
+            messages.push("⚖️ Good predator-prey balance!");
+          }
+          
+          if (messages.length > 0) {
+            showNarrativeMessage(messages[Math.floor(Math.random() * messages.length)]);
+          } else {
+            const encouragements = [
+              "🌱 Your ecosystem is developing nicely",
+              "🦋 Biodiversity is increasing",
+              "⭐ Keep up the good management!",
+              "🌍 A balanced ecosystem is emerging"
+            ];
+            showNarrativeMessage(encouragements[Math.floor(Math.random() * encouragements.length)]);
+          }
+        }
+
+        // Check objectives and achievements
+        function checkObjectives() {
+          // Standard objectives
+          objectives.forEach(obj => {
+            if (obj.achieved) return;
+            
+            let isAchieved = false;
+            switch(obj.type) {
+              case "pademelons":
+                isAchieved = pademelons >= 150;
+                break;
+              case "apex_stability":
+                isAchieved = devils >= 60 && grass > 300;
+                break;
+              case "keystone_effect":
+                isAchieved = grass >= 300;
+                break;
+              case "disasters":
+                isAchieved = (obj.count || 0) >= 5;
+                break;
+              case "biodiversity":
+                isAchieved = biodiversityIndex > 0.6 && customFrameCount >= 500;
+                break;
+            }
+            
+            if (isAchieved) {
+              obj.achieved = true;
+              points += obj.points;
+              showAchievement(obj.description, obj.points);
+            }
+          });
+          
+          // Ongoing objectives
+          ongoingObjectives.forEach(obj => {
+            if (obj.achieved) return;
+            
+            let conditionMet = false;
+            switch(obj.type) {
+              case "grass":
+                conditionMet = obj.condition(grass);
+                break;
+              case "devils":
+                conditionMet = devils > 50;
+                break;
+              case "balanced":
+                conditionMet = grass > 400 && pademelons > 60 && devils > 25 && bandicoots > 30;
+                break;
+            }
+            
+            if (conditionMet) {
+              obj.target--;
+              if (obj.target <= 0) {
+                obj.achieved = true;
+                points += obj.points;
+                showAchievement(obj.description, obj.points);
+              }
+            } else {
+              if (obj.target < (obj.type === "balanced" ? 1500 : 800)) {
+                obj.target += 5;
+              }
+            }
+          });
+          
+          checkAchievements();
+        }
 
         // Check for achievement unlocks
         function checkAchievements() {
@@ -2086,7 +822,7 @@ function triggerNarrativeEvent() {
               achieved = ongoingObjectives.every(obj => obj.achieved);
             } 
             else if (achievement.description.includes("devil population")) {
-              achievement.frames = devils > 70 ? (achievement.frames || 0) + 1 : 0;
+              achievement.frames = devils > 50 ? (achievement.frames || 0) + 1 : 0;
               achieved = (achievement.frames || 0) >= achievement.target;
             }
             else if (achievement.description.includes("bandicoot population")) {
@@ -2103,7 +839,6 @@ function triggerNarrativeEvent() {
 
         // Update ecosystem metrics
         function updateEcosystemMetrics() {
-          // Calculate biodiversity index (Simpson's Diversity Index)
           const total = grass + pademelons + devils + bandicoots;
           if (total > 0) {
             const p1 = grass / total;
@@ -2113,7 +848,6 @@ function triggerNarrativeEvent() {
             biodiversityIndex = 1 - (p1*p1 + p2*p2 + p3*p3 + p4*p4);
           }
           
-          // Update ecosystem health display
           updateHealthDisplay();
         }
 
@@ -2137,17 +871,15 @@ function triggerNarrativeEvent() {
             healthColor = "#3498db";
           }
           
-          // Update health meter
           healthStatus.style.width = `${healthPercentage}%`;
           healthStatus.style.background = healthColor;
           healthText.textContent = healthStatusText;
           healthText.style.color = healthColor;
           
-          // Update biodiversity display
           document.getElementById("biodiversityValue").textContent = biodiversityIndex.toFixed(2);
         }
 
-        // Update species value displays
+        // Update species displays
         function updateSpeciesDisplays() {
           grassValue.textContent = Math.round(grass);
           pademelonsValue.textContent = Math.round(pademelons);
@@ -2155,27 +887,74 @@ function triggerNarrativeEvent() {
           bandicootsValue.textContent = Math.round(bandicoots);
         }
 
+        // Reset simulation
+        function resetSim() {
+          grass = 600;
+          pademelons = 80;
+          devils = 25;
+          bandicoots = 40;
+          
+          grassParticles = [];
+          pademelonParticles = [];
+          devilParticles = [];
+          bandicootParticles = [];
+          
+          customFrameCount = 0;
+          lastFrameTime = performance.now();
+          points = 0;
+          ecosystemHealth = 100;
+          biodiversityIndex = 0;
+          
+          objectives.forEach(obj => {
+            obj.achieved = false;
+            if (obj.type === "disasters") obj.count = 0;
+          });
+          
+          ongoingObjectives.forEach(obj => {
+            obj.achieved = false;
+            obj.target = obj.type === "balanced" ? 1500 : 800;
+          });
+          
+          achievements.forEach(ach => ach.achieved = false);
+          
+          if (chart) {
+            chart.data.labels = [];
+            chart.data.datasets.forEach(dataset => dataset.data = []);
+            chart.update();
+          }
+          
+          populationHistory = [];
+          
+          document.getElementById("rainfall").value = 50;
+          document.getElementById("rainfallValue").textContent = "50";
+          document.getElementById("temperature").value = 25;
+          document.getElementById("temperatureValue").textContent = "25";
+          document.getElementById("invasiveSpecies").value = 5;
+          document.getElementById("invasiveSpeciesValue").textContent = "5";
+          document.getElementById("humanImpact").value = 2;
+          document.getElementById("humanImpactValue").textContent = "2";
+          
+          season = 0;
+          targetRainfall = currentRainfall = seasonParams[season].rainfall;
+          targetTemperature = currentTemperature = seasonParams[season].temperature;
+          seasonDisplay.textContent = seasonParams[season].name;
+          
+          updateUI();
+          showNarrativeMessage("🌱 Ecosystem reset to balanced state");
+        }
+
         // Draw visualization
         function drawVisualization() {
-          // Background with seasonal colors
           p.background(showSeasons ? seasonParams[season].color : 240);
-          
-          // Draw ecosystem visualization
           drawEcosystem();
-          
-          // Draw particle effects
           drawParticles();
-          
-          // Update UI
           updateUI();
         }
 
-        // Draw ecosystem visualization
+        // Draw ecosystem
         function drawEcosystem() {
-          // Draw food web connections
           drawFoodWeb();
           
-          // Draw population indicators with centered spacing
           const spacing = p.width / 5;
           drawPopulationIndicator(spacing, p.height/2, grass, "#4CAF50", "Grass");
           drawPopulationIndicator(2 * spacing, p.height/2, pademelons, "#FF9800", "Pademelons");
@@ -2183,30 +962,26 @@ function triggerNarrativeEvent() {
           drawPopulationIndicator(4 * spacing, p.height/2, bandicoots, "#FFEB3B", "Bandicoots");
         }
 
-        // Draw food web connections
+        // Draw food web
         function drawFoodWeb() {
           p.strokeWeight(2);
           const spacing = p.width / 5;
           
-          // Grass → Pademelons (consumption)
           if (grass > 10 && pademelons > 5) {
             p.stroke(76, 175, 80, 150);
             p.line(spacing + 20, p.height/2, 2 * spacing - 20, p.height/2);
           }
           
-          // Pademelons → Devils (predation)
           if (pademelons > 5 && devils > 2) {
             p.stroke(244, 67, 54, 150);
             p.line(2 * spacing + 20, p.height/2, 3 * spacing - 20, p.height/2);
           }
           
-          // Bandicoots → Devils (predation)
           if (bandicoots > 5 && devils > 2) {
             p.stroke(244, 67, 54, 100);
             p.line(4 * spacing - 20, p.height/2, 3 * spacing + 20, p.height/2);
           }
           
-          // Bandicoots → Grass (positive feedback)
           if (bandicoots > 5 && grass > 10) {
             p.stroke(255, 235, 59, 150);
             p.drawingContext.setLineDash([5, 3]);
@@ -2215,30 +990,26 @@ function triggerNarrativeEvent() {
           }
         }
 
-        // Draw particle effects
+        // Draw particles
         function drawParticles() {
-          // Draw grass particles
           grassParticles.forEach(part => {
             p.fill(part.color || [76, 175, 80, part.life/2]);
             p.noStroke();
             p.ellipse(part.x, part.y, part.size);
           });
           
-          // Draw pademelon particles
           pademelonParticles.forEach(part => {
             p.fill([255, 152, 0, part.life/2]);
             p.noStroke();
             p.ellipse(part.x, part.y, part.size);
           });
           
-          // Draw devil particles
           devilParticles.forEach(part => {
             p.fill([244, 67, 54, part.life/2]);
             p.noStroke();
             p.ellipse(part.x, part.y, part.size);
           });
           
-          // Draw bandicoot particles
           bandicootParticles.forEach(part => {
             p.fill([255, 235, 59, part.life/2]);
             p.noStroke();
@@ -2248,10 +1019,8 @@ function triggerNarrativeEvent() {
 
         // Draw population indicator
         function drawPopulationIndicator(x, y, population, color, label) {
-          // Map population to size (10-100px)
           const size = p.map(population, 0, 1000, 20, 100);
           
-          // Parse color
           let r, g, b;
           if (color.startsWith('#')) {
             r = parseInt(color.slice(1,3), 16);
@@ -2261,35 +1030,28 @@ function triggerNarrativeEvent() {
             [r, g, b] = [0, 0, 0];
           }
           
-          // Draw base circle with opacity based on population health
           const healthOpacity = p.map(population, 0, 500, 50, 200);
           p.fill(r, g, b, healthOpacity);
           p.noStroke();
           p.ellipse(x, y, size);
           
-          // Draw animated pulse if population is growing
           if (population > 0) {
             const pulseSize = size * (1 + 0.1 * Math.sin(p.frameCount * 0.05));
             p.fill(r, g, b, healthOpacity * 0.3);
             p.ellipse(x, y, pulseSize);
           }
           
-          // Label
           p.fill(0);
           p.textSize(12);
           p.textAlign(p.CENTER);
           p.text(`${label}: ${Math.round(population)}`, x, y + size/2 + 20);
         }
 
-        // Update UI elements
+        // Update UI
         function updateUI() {
-          // Update points display
           pointsDisplay.textContent = points;
-          
-          // Update objective display
           updateObjectiveDisplay();
           
-          // Check for ranger badge
           if (points >= rangerBadgePoints && !rangerBadgeAchieved) {
             rangerBadgeAchieved = true;
             showRangerBadge();
@@ -2304,7 +1066,6 @@ function triggerNarrativeEvent() {
           if (nextObj) {
             objectiveDisplay.textContent = nextObj.description;
             
-            // Calculate progress percentage
             let progress = 0;
             if (nextObj.type === "disasters") {
               progress = Math.round(((nextObj.count || 0) / nextObj.target) * 100);
@@ -2313,7 +1074,6 @@ function triggerNarrativeEvent() {
               progress = Math.round(((total - nextObj.target) / total) * 100);
             }
             
-            // Update progress bar
             progressBar.style.width = `${Math.min(100, progress)}%`;
             progressText.textContent = `${Math.min(100, progress)}% complete`;
           } else {
@@ -2376,7 +1136,7 @@ function triggerNarrativeEvent() {
           }, 100);
         }
 
-        // Toggle pause state
+        // Toggle pause
         function togglePause() {
           isPaused = !isPaused;
           const pauseBtn = document.getElementById("pauseButton");
@@ -2391,7 +1151,7 @@ function triggerNarrativeEvent() {
           }
         }
 
-        // Toggle seasons display
+        // Toggle seasons
         function toggleSeasonsDisplay() {
           showSeasons = document.getElementById("toggleSeasons").checked;
         }
@@ -2420,5 +1180,3 @@ function triggerNarrativeEvent() {
       });
     });
   </script>
-</body>
-</html>

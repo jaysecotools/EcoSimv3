@@ -1,0 +1,442 @@
+// Update simulation state - REPLACE the update functions with these balanced versions
+function update() {
+  // Seasonal changes
+  updateSeasons();
+  
+  // Get environmental factors
+  const rainfall = getModifiedRainfall();
+  const temperature = getModifiedTemperature();
+  const invasiveSpecies = parseFloat(document.getElementById("invasiveSpecies").value);
+  const humanImpact = parseFloat(document.getElementById("humanImpact").value);
+  
+  // Update populations with CORRECTED balanced dynamics
+  updateGrass(rainfall, invasiveSpecies);
+  updatePademelons(temperature, humanImpact, invasiveSpecies);
+  updateBandicoots(temperature, invasiveSpecies, humanImpact);
+  updateDevils(humanImpact, temperature);
+  
+  // Apply gentle population limits
+  applyLimits();
+  
+  // Update particle effects
+  updateParticles();
+  
+  // Track history
+  updateHistory();
+  
+  // Check for events and objectives
+  checkRandomEvents();
+  checkObjectives();
+  updateEcosystemMetrics();
+  
+  // Update displays
+  updateSpeciesDisplays();
+}
+
+// FIXED: Grass should grow easily but be limited by grazing
+function updateGrass(rainfall, invasiveSpecies) {
+  // Base growth - grass grows quickly with good rainfall
+  const rainfallFactor = 0.5 + (rainfall / 100); // 0.5 to 1.5
+  
+  // Bandicoots help grass grow (up to 50% boost)
+  const bandicootBoost = 1 + (bandicoots / 400); // Max 1.75 with 300 bandicoots
+  
+  // Natural growth (5-15% per frame)
+  const growth = grass * 0.08 * rainfallFactor * bandicootBoost;
+  
+  // Grazing by pademelons (each pademelon eats some grass)
+  const grazing = pademelons * 0.5;
+  
+  // Invasive species compete with grass
+  const invasiveEffect = invasiveSpecies * 2;
+  
+  // Update grass
+  grass = grass + growth - grazing - invasiveEffect;
+  
+  // Apply limits
+  if (grassLimitEnabled) {
+    grass = Math.min(grass, 1500);
+  } else {
+    grass = Math.min(grass, 2500);
+  }
+  grass = Math.max(grass, 50); // Keep minimum grass
+  
+  // Particle effects
+  if (growth > grazing && Math.random() < 0.05) {
+    grassParticles.push({
+      x: p.random(p.width),
+      y: p.height/2,
+      size: p.random(5, 10),
+      life: 100,
+      vx: p.random(-1, 1),
+      vy: p.random(-2, -1)
+    });
+  }
+}
+
+// FIXED: Pademelons should grow well but be controlled by devils
+function updatePademelons(temperature, humanImpact, invasiveSpecies) {
+  // Food availability - more grass means more pademelons
+  const foodFactor = Math.min(2, grass / 400); // 0.5 to 2.0
+  
+  // Natural growth rate (5-15% per frame)
+  const births = pademelons * 0.06 * foodFactor;
+  
+  // Deaths from various causes
+  const predation = devils * 0.3; // Each devil eats some pademelons
+  const tempStress = Math.abs(temperature - 20) * 0.5; // Temperature stress
+  const hunting = humanImpact * 1.5;
+  const invasiveCompetition = invasiveSpecies * 1;
+  
+  // Natural mortality
+  const naturalDeaths = pademelons * 0.02;
+  
+  // Update pademelons
+  pademelons = pademelons + births - predation - tempStress - hunting - invasiveCompetition - naturalDeaths;
+  
+  // Keep within reasonable bounds
+  pademelons = Math.min(pademelons, 400);
+  pademelons = Math.max(pademelons, 20);
+  
+  // Particle effects
+  if (births > predation && Math.random() < 0.03) {
+    pademelonParticles.push({
+      x: p.random(p.width),
+      y: p.height/2,
+      size: p.random(8, 12),
+      life: 100,
+      vx: p.random(-1, 1),
+      vy: p.random(-1, 0)
+    });
+  }
+}
+
+// FIXED: Bandicoots should be resilient but compete with pademelons
+function updateBandicoots(temperature, invasiveSpecies, humanImpact) {
+  // Bandicoots benefit from grass but also compete with pademelons
+  const foodFactor = Math.min(2, grass / 300);
+  const competition = pademelons * 0.1; // Competition with pademelons
+  
+  // Natural growth
+  const births = bandicoots * 0.05 * foodFactor;
+  
+  // Deaths
+  const predation = devils * 0.15; // Devils eat some bandicoots
+  const tempStress = Math.abs(temperature - 22) * 0.4;
+  const hunting = humanImpact * 1;
+  const invasiveEffect = invasiveSpecies * 0.8;
+  const naturalDeaths = bandicoots * 0.02;
+  
+  // Update bandicoots
+  bandicoots = bandicoots + births - predation - tempStress - hunting - invasiveEffect - competition - naturalDeaths;
+  
+  // Keep within bounds
+  bandicoots = Math.min(bandicoots, 300);
+  bandicoots = Math.max(bandicoots, 15);
+  
+  // Particle effects
+  if (births > predation && Math.random() < 0.02) {
+    bandicootParticles.push({
+      x: p.random(p.width),
+      y: p.height/2,
+      size: p.random(6, 10),
+      life: 100,
+      vx: p.random(-0.5, 0.5),
+      vy: p.random(-0.5, 0.5)
+    });
+  }
+}
+
+// FIXED: Devils should be limited by prey availability
+function updateDevils(humanImpact, temperature) {
+  // Food availability based on prey
+  const preyTotal = pademelons + bandicoots;
+  const foodFactor = Math.min(2, preyTotal / 150); // 0.5 to 2.0
+  
+  // Natural growth - devils reproduce slowly
+  const births = devils * 0.03 * foodFactor;
+  
+  // Deaths
+  const starvation = devils * (1 - Math.min(1, preyTotal / 100)) * 0.1;
+  const tempStress = Math.abs(temperature - 18) * 0.3;
+  const hunting = humanImpact * 0.8;
+  const naturalDeaths = devils * 0.02;
+  
+  // Update devils
+  devils = devils + births - starvation - tempStress - hunting - naturalDeaths;
+  
+  // Carrying capacity based on prey
+  const maxDevils = (pademelons * 0.2) + (bandicoots * 0.1);
+  devils = Math.min(devils, Math.max(10, maxDevils));
+  
+  // Keep minimum population
+  devils = Math.max(devils, 5);
+  
+  // Particle effects
+  if (births > naturalDeaths && Math.random() < 0.01) {
+    devilParticles.push({
+      x: p.random(p.width),
+      y: p.height/2,
+      size: p.random(10, 15),
+      life: 100,
+      vx: p.random(-0.5, 0.5),
+      vy: p.random(-0.5, 0.5)
+    });
+  }
+}
+
+// Gentler limits
+function applyLimits() {
+  // Soft caps - allow natural fluctuation but prevent extremes
+  grass = Math.min(grass, grassLimitEnabled ? 1500 : 2500);
+  grass = Math.max(grass, 50);
+  
+  pademelons = Math.min(pademelons, 400);
+  pademelons = Math.max(pademelons, 15);
+  
+  devils = Math.min(devils, 120);
+  devils = Math.max(devils, 3);
+  
+  bandicoots = Math.min(bandicoots, 300);
+  bandicoots = Math.max(bandicoots, 10);
+}
+
+// Update resetSim with more balanced starting values
+function resetSim() {
+  // Reset populations - more balanced starting point
+  grass = 600;
+  pademelons = 80;
+  devils = 25;
+  bandicoots = 40;
+  
+  // Reset particles
+  grassParticles = [];
+  pademelonParticles = [];
+  devilParticles = [];
+  bandicootParticles = [];
+  
+  // Reset tracking variables
+  customFrameCount = 0;
+  lastFrameTime = performance.now();
+  points = 0;
+  ecosystemHealth = 100;
+  biodiversityIndex = 0;
+  
+  // Reset objectives
+  objectives.forEach(obj => {
+    obj.achieved = false;
+    if (obj.type === "disasters") obj.count = 0;
+  });
+  
+  ongoingObjectives.forEach(obj => {
+    obj.achieved = false;
+    obj.target = obj.type === "balanced" ? 1500 : 800;
+  });
+  
+  achievements.forEach(ach => ach.achieved = false);
+  
+  // Reset chart
+  if (chart) {
+    chart.data.labels = [];
+    chart.data.datasets.forEach(dataset => dataset.data = []);
+    chart.update();
+  }
+  
+  populationHistory = [];
+  
+  // Reset sliders to default
+  document.getElementById("rainfall").value = 50;
+  document.getElementById("rainfallValue").textContent = "50";
+  document.getElementById("temperature").value = 25;
+  document.getElementById("temperatureValue").textContent = "25";
+  document.getElementById("invasiveSpecies").value = 5;
+  document.getElementById("invasiveSpeciesValue").textContent = "5";
+  document.getElementById("humanImpact").value = 2;
+  document.getElementById("humanImpactValue").textContent = "2";
+  
+  // Reset season
+  season = 0;
+  targetRainfall = currentRainfall = seasonParams[season].rainfall;
+  targetTemperature = currentTemperature = seasonParams[season].temperature;
+  seasonDisplay.textContent = seasonParams[season].name;
+  
+  // Update UI
+  updateUI();
+  
+  showNarrativeMessage("🌱 Ecosystem reset to balanced state");
+}
+
+// Make objectives easier to achieve
+function checkObjectives() {
+  // Standard objectives - with lower targets
+  objectives.forEach(obj => {
+    if (obj.achieved) return;
+    
+    let isAchieved = false;
+    switch(obj.type) {
+      case "pademelons":
+        isAchieved = pademelons >= 150; // Lowered from 200
+        break;
+      case "apex_stability":
+        isAchieved = devils >= 60 && grass > 300; // Lowered from 100 devils
+        break;
+      case "keystone_effect":
+        isAchieved = grass >= 300; // Bandicoots helping grass reach 300
+        break;
+      case "disasters":
+        isAchieved = (obj.count || 0) >= 5; // Lowered from 8
+        break;
+      case "biodiversity":
+        isAchieved = biodiversityIndex > 0.6 && customFrameCount >= 500; // Easier
+        break;
+    }
+    
+    if (isAchieved) {
+      obj.achieved = true;
+      points += obj.points;
+      showAchievement(obj.description, obj.points);
+    }
+  });
+  
+  // Ongoing objectives - with longer time but easier conditions
+  ongoingObjectives.forEach(obj => {
+    if (obj.achieved) return;
+    
+    let conditionMet = false;
+    switch(obj.type) {
+      case "grass":
+        conditionMet = obj.condition(grass); // Already >700
+        break;
+      case "devils":
+        conditionMet = devils > 50; // Lowered from 70
+        break;
+      case "balanced":
+        conditionMet = grass > 400 && pademelons > 60 && devils > 25 && bandicoots > 30; // Easier
+        break;
+    }
+    
+    if (conditionMet) {
+      obj.target--;
+      if (obj.target <= 0) {
+        obj.achieved = true;
+        points += obj.points;
+        showAchievement(obj.description, obj.points);
+      }
+    } else {
+      // Reset progress more slowly
+      if (obj.target < (obj.type === "balanced" ? 1500 : 800)) {
+        obj.target += 5; // Slow recovery
+      }
+    }
+  });
+  
+  // Achievements
+  checkAchievements();
+}
+
+// Make disasters less destructive
+function triggerRandomEvent() {
+  const events = [
+    { 
+      name: "Bushfire", 
+      effect: () => {
+        grass *= 0.7; // Less destructive (was 0.3)
+        pademelons *= 0.85; // Less destructive
+        devils *= 0.95;
+        bandicoots *= 0.9;
+        showEventMessage("🔥 Small bushfire affected the ecosystem", "#e74c3c");
+      }
+    },
+    {
+      name: "Devil Facial Tumor Disease",
+      effect: () => {
+        const diseaseSeverity = Math.random() * 0.2 + 0.1; // 10-30% reduction (was 20-50%)
+        devils *= (1 - diseaseSeverity);
+        showEventMessage(`🦠 Devil disease outbreak affected ${Math.round(diseaseSeverity * 100)}% of population`, "#9b59b6");
+      }
+    },
+    {
+      name: "Drought",
+      effect: () => {
+        targetRainfall *= 0.7; // Less severe
+        showEventMessage("💧 Mild drought reducing rainfall", "#3498db");
+      }
+    },
+    {
+      name: "Flood",
+      effect: () => {
+        grass *= 0.85;
+        pademelons *= 0.9;
+        showEventMessage("🌊 Seasonal flooding affected low-lying areas", "#3498db");
+      }
+    },
+    {
+      name: "Heat Wave",
+      effect: () => {
+        targetTemperature += 5;
+        showEventMessage("☀️ Short heat wave affecting the ecosystem", "#f39c12");
+      }
+    }
+  ];
+  
+  const event = events[Math.floor(Math.random() * events.length)];
+  event.effect();
+  disasterFrame = customFrameCount;
+  
+  // Update disaster counters
+  const disasterObj = objectives.find(obj => obj.type === "disasters");
+  if (disasterObj) {
+    disasterObj.count = (disasterObj.count || 0) + 1;
+  }
+}
+
+// Better narrative messages for feedback
+function triggerNarrativeEvent() {
+  const messages = [];
+  
+  // Helpful feedback messages
+  if (grass > 1000) {
+    messages.push("🌿 Grass is thriving! Great growing conditions");
+  } else if (grass < 200) {
+    messages.push("⚠️ Grass is low - consider increasing rainfall or reducing grazing");
+  }
+  
+  if (pademelons > 250) {
+    messages.push("🦘 Pademelon population is booming! Devils should increase soon");
+  } else if (pademelons < 40) {
+    messages.push("🦘 Pademelons need help - check predation and food supply");
+  }
+  
+  if (devils > 80) {
+    messages.push("🦊 Devil population is high - they're controlling herbivores well");
+  } else if (devils < 15) {
+    messages.push("🦊 Low devil numbers - pademelons may overpopulate");
+  }
+  
+  if (bandicoots > 150) {
+    messages.push("🐾 Bandicoots are engineering the soil! Grass growth boosted");
+  } else if (bandicoots < 25) {
+    messages.push("🐾 Bandicoot numbers are low - soil health may suffer");
+  }
+  
+  // Balance messages
+  const predatorPreyRatio = pademelons / (devils + 1);
+  if (predatorPreyRatio > 8) {
+    messages.push("⚖️ Too many pademelons per devil - predators need help");
+  } else if (predatorPreyRatio < 3 && pademelons > 50) {
+    messages.push("⚖️ Good predator-prey balance!");
+  }
+  
+  if (messages.length > 0) {
+    showNarrativeMessage(messages[Math.floor(Math.random() * messages.length)]);
+  } else {
+    // Default encouraging messages
+    const encouragements = [
+      "🌱 Your ecosystem is developing nicely",
+      "🦋 Biodiversity is increasing",
+      "⭐ Keep up the good management!",
+      "🌍 A balanced ecosystem is emerging"
+    ];
+    showNarrativeMessage(encouragements[Math.floor(Math.random() * encouragements.length)]);
+  }
+}

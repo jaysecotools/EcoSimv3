@@ -1,141 +1,1021 @@
-// Replace the update function with this working version:
+<script>
+  // Initialize the simulation when page loads
+  document.addEventListener('DOMContentLoaded', function() {
+    const ecosystemSimulator = function(p) {
+      // Global Variables
+      let grass, pademelons, devils, bandicoots, chart;
+      let season = 0; // 0: Spring, 1: Summer, 2: Autumn, 3: Winter
+      let seasonDuration = 300;
+      let showSeasons = true;
+      let showDisasters = true;
+      let disasterDuration = 100;
+      let disasterFrame = -disasterDuration;
+      let isPaused = false;
+      let grassLimitEnabled = true;
+      let points = 0;
+      let stabilityCheckFrames = 0;
+      const stabilityThreshold = 1000;
+      const stabilityPoints = 50;
+      const rangerBadgePoints = 1500;
+      let rangerBadgeAchieved = false;
 
-function update() {
-  // Seasonal changes
-  if (showSeasons) {
-    if (customFrameCount % seasonDuration === 0) {
-      season = (season + 1) % 4;
-      seasonDisplay.textContent = seasonParams[season].name;
-      targetRainfall = seasonParams[season].rainfall;
-      targetTemperature = seasonParams[season].temperature;
-    }
+      // Speed control
+      let speedMultiplier = 1;
+      let lastFrameTime = performance.now();
+      let customFrameCount = 0;
+
+      // Ecological metrics
+      let biodiversityIndex = 0;
+      let ecosystemHealth = 100;
+      let maxGrass = 0;
+      let maxPademelons = 0;
+      let maxDevils = 0;
+      let maxBandicoots = 0;
+
+      // Particle effects
+      let grassParticles = [];
+      let pademelonParticles = [];
+      let devilParticles = [];
+      let bandicootParticles = [];
+
+      // Learning objectives
+      let objectives = [
+        { 
+          description: "Increase pademelon population to 200", 
+          target: 200, 
+          achieved: false, 
+          points: 200, 
+          type: "pademelons" 
+        },
+        { 
+          description: "Maintain devil population > 100 with grass > 400", 
+          target: 100, 
+          achieved: false, 
+          points: 300, 
+          type: "apex_stability" 
+        },
+        { 
+          description: "Trigger bandicoot-driven grass recovery (50% increase)", 
+          target: 1.5, 
+          achieved: false, 
+          points: 200, 
+          type: "keystone_effect" 
+        },
+        { 
+          description: "Survive 8 natural disasters", 
+          target: 8, 
+          achieved: false, 
+          points: 100, 
+          count: 0, 
+          type: "disasters" 
+        },
+        { 
+          description: "Maintain biodiversity index > 0.7 for 1000 frames", 
+          target: 1000, 
+          achieved: false, 
+          points: 150, 
+          type: "biodiversity" 
+        }
+      ];
+
+      let ongoingObjectives = [
+        { 
+          description: "Keep grass population > 700 for 800 frames", 
+          target: 800, 
+          achieved: false, 
+          points: 300, 
+          type: "grass", 
+          condition: (g) => g > 700 
+        },
+        { 
+          description: "Keep devil population > 70 for 800 frames", 
+          target: 800, 
+          achieved: false, 
+          points: 300, 
+          type: "devils", 
+          condition: (d) => d > 70 
+        },
+        { 
+          description: "Maintain balanced ecosystem for 1500 frames", 
+          target: 1500, 
+          achieved: false, 
+          points: 500, 
+          type: "balanced", 
+          condition: (g, p, d, b) => g > 500 && p > 100 && d > 50 && b > 100 
+        }
+      ];
+
+      let achievements = [
+        { 
+          description: "Ecosystem Guardian: Achieve all ongoing objectives", 
+          achieved: false, 
+          points: 500 
+        },
+        { 
+          description: "Devil Advocate: Maintain healthy devil population for 5000 frames", 
+          achieved: false, 
+          frames: 0, 
+          target: 5000, 
+          points: 300 
+        },
+        { 
+          description: "Keystone Keeper: Double bandicoot population from starting value", 
+          achieved: false, 
+          target: 60, 
+          points: 200 
+        }
+      ];
+
+      let populationHistory = [];
+      const historyLength = 200;
+
+      // Seasonal parameters
+      let seasonParams = [
+        { name: "Spring", rainfall: 70, temperature: 20, color: "#d4f1f4" },
+        { name: "Summer", rainfall: 30, temperature: 35, color: "#f7d794" },
+        { name: "Autumn", rainfall: 50, temperature: 15, color: "#f5cd79" },
+        { name: "Winter", rainfall: 40, temperature: 5, color: "#c8d6e5" }
+      ];
+
+      // Interpolation variables
+      let targetRainfall, targetTemperature;
+      let currentRainfall, currentTemperature;
+      const interpolationSpeed = 0.01;
+
+      // DOM Elements
+      let disasterMessage, seasonDisplay, pointsDisplay, objectiveDisplay;
+      let ecosystemHealthDisplay, grassValue, pademelonsValue;
+      let devilsValue, bandicootsValue, healthStatus, healthText;
+      let progressBar, progressText;
+
+      p.setup = function() {
+        // Initialize p5.js canvas
+        let canvas = p.createCanvas(800, 300);
+        canvas.parent("canvas-container");
+        
+        // Initialize chart
+        initChart();
+        
+        // Get DOM elements
+        disasterMessage = document.getElementById('disasterMessage');
+        seasonDisplay = document.getElementById('seasonDisplay');
+        pointsDisplay = document.getElementById('pointsDisplay');
+        objectiveDisplay = document.getElementById('objectiveDisplay');
+        ecosystemHealthDisplay = document.getElementById('ecosystemHealth');
+        grassValue = document.getElementById('grass-value');
+        pademelonsValue = document.getElementById('pademelons-value');
+        devilsValue = document.getElementById('devils-value');
+        bandicootsValue = document.getElementById('bandicoots-value');
+        healthStatus = document.querySelector('.health-status');
+        healthText = document.querySelector('.health-text');
+        progressBar = document.querySelector('.progress-bar');
+        progressText = document.querySelector('.progress-text');
+        
+        // Set up controls
+        initControls();
+        
+        // Set up species card interactions
+        document.querySelectorAll('.species-card').forEach(card => {
+          card.addEventListener('click', function() {
+            this.classList.toggle('expanded');
+          });
+        });
+        
+        // Reset simulation to starting state
+        resetSim();
+        
+        // Start the game loop
+        p.loop();
+      };
+
+      p.draw = function() {
+        // Handle speed control
+        const now = performance.now();
+        const deltaTime = now - lastFrameTime;
+        lastFrameTime = now;
+        
+        // Only update when not paused and enough time has passed for current speed
+        if (!isPaused && deltaTime > 1000 / (60 * speedMultiplier)) {
+          update();
+          customFrameCount++;
+        }
+        
+        // Always draw (even when paused) for smooth animations
+        drawVisualization();
+      };
+
+      // Initialize the population chart
+      function initChart() {
+        const ctx = document.getElementById('populationChart').getContext('2d');
+        chart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: [],
+            datasets: [
+              { 
+                label: "Grass", 
+                data: [], 
+                borderColor: "#4CAF50", 
+                backgroundColor: "rgba(76, 175, 80, 0.1)",
+                fill: true,
+                tension: 0.4
+              },
+              { 
+                label: "Pademelons", 
+                data: [], 
+                borderColor: "#FF9800", 
+                backgroundColor: "rgba(255, 152, 0, 0.1)",
+                fill: true,
+                tension: 0.4
+              },
+              { 
+                label: "Devils", 
+                data: [], 
+                borderColor: "#F44336", 
+                backgroundColor: "rgba(244, 67, 54, 0.1)",
+                fill: true,
+                tension: 0.4
+              },
+              { 
+                label: "Bandicoots", 
+                data: [], 
+                borderColor: "#FFEB3B", 
+                backgroundColor: "rgba(255, 235, 59, 0.1)",
+                fill: true,
+                tension: 0.4
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: {
+              duration: 0
+            },
+            plugins: {
+              legend: {
+                position: 'top',
+                labels: {
+                  boxWidth: 12,
+                  padding: 20,
+                  font: {
+                    size: 12
+                  }
+                }
+              },
+              tooltip: {
+                mode: 'index',
+                intersect: false
+              }
+            },
+            scales: {
+              x: {
+                grid: {
+                  display: false
+                },
+                ticks: {
+                  maxRotation: 0,
+                  autoSkip: true,
+                  maxTicksLimit: 10
+                }
+              },
+              y: {
+                beginAtZero: true,
+                grid: {
+                  color: 'rgba(0,0,0,0.05)'
+                }
+              }
+            },
+            elements: {
+              point: {
+                radius: 0,
+                hoverRadius: 5
+              }
+            }
+          }
+        });
+      }
+
+      // Set up control event listeners
+      function initControls() {
+        // Speed control
+        const speedSlider = document.getElementById("speedSlider");
+        const speedValue = document.getElementById("speedValue");
+        speedSlider.addEventListener("input", () => {
+          speedMultiplier = parseFloat(speedSlider.value);
+          speedValue.textContent = speedMultiplier.toFixed(1) + "x";
+        });
+
+        // Slider value updates
+        document.querySelectorAll("input[type='range']").forEach(slider => {
+          slider.addEventListener("input", function() {
+            document.getElementById(this.id + 'Value').textContent = this.value;
+          });
+        });
+
+        // Button controls
+        document.getElementById("resetButton").addEventListener("click", resetSim);
+        document.getElementById("pauseButton").addEventListener("click", togglePause);
+        
+        // Toggle switches
+        document.getElementById("toggleSeasons").addEventListener("change", toggleSeasonsDisplay);
+        document.getElementById("toggleDisasters").addEventListener("change", toggleDisasters);
+        document.getElementById("toggleGrassLimit").addEventListener("change", toggleGrassLimit);
+
+        // Tab navigation
+        document.querySelectorAll(".tab-btn").forEach(btn => {
+          btn.addEventListener("click", () => {
+            document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+            document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+            
+            btn.classList.add("active");
+            document.getElementById(`${btn.dataset.tab}-tab`).classList.add("active");
+          });
+        });
+      }
+
+      // Reset simulation to initial state
+      function resetSim() {
+        // Reset populations
+        grass = 100;
+        pademelons = 50;
+        devils = 10;
+        bandicoots = 30;
+        
+        // Reset particles
+        grassParticles = [];
+        pademelonParticles = [];
+        devilParticles = [];
+        bandicootParticles = [];
+        
+        // Reset tracking variables
+        customFrameCount = 0;
+        lastFrameTime = performance.now();
+        points = 0;
+        ecosystemHealth = 100;
+        biodiversityIndex = 0;
+        maxGrass = 0;
+        maxPademelons = 0;
+        maxDevils = 0;
+        maxBandicoots = 0;
+        
+        // Reset objectives
+        objectives.forEach(obj => obj.achieved = false);
+        ongoingObjectives.forEach(obj => {
+          obj.achieved = false;
+          obj.target = obj.type === "balanced" ? 1500 : 800;
+        });
+        achievements.forEach(ach => ach.achieved = false);
+        
+        // Reset chart
+        if (chart) {
+          chart.data.labels = [];
+          chart.data.datasets.forEach(dataset => dataset.data = []);
+          chart.update();
+        }
+        
+        populationHistory = [];
+        
+        // Reset sliders to default
+        document.getElementById("rainfall").value = 50;
+        document.getElementById("rainfallValue").textContent = "50";
+        document.getElementById("temperature").value = 25;
+        document.getElementById("temperatureValue").textContent = "25";
+        document.getElementById("invasiveSpecies").value = 5;
+        document.getElementById("invasiveSpeciesValue").textContent = "5";
+        document.getElementById("humanImpact").value = 2;
+        document.getElementById("humanImpactValue").textContent = "2";
+        
+        // Reset season
+        season = 0;
+        targetRainfall = currentRainfall = seasonParams[season].rainfall;
+        targetTemperature = currentTemperature = seasonParams[season].temperature;
+        seasonDisplay.textContent = seasonParams[season].name;
+        
+        // Update UI
+        updateUI();
+      }
+
+      // Update simulation state
+      function update() {
+        // Seasonal changes
+        if (showSeasons) {
+          if (customFrameCount % seasonDuration === 0) {
+            season = (season + 1) % 4;
+            seasonDisplay.textContent = seasonParams[season].name;
+            targetRainfall = seasonParams[season].rainfall;
+            targetTemperature = seasonParams[season].temperature;
+          }
+          
+          // Smooth seasonal transitions
+          currentRainfall += (targetRainfall - currentRainfall) * interpolationSpeed;
+          currentTemperature += (targetTemperature - currentTemperature) * interpolationSpeed;
+        } else {
+          // When seasons are off, maintain baseline conditions
+          seasonDisplay.textContent = "None";
+          currentRainfall = 50;
+          currentTemperature = 25;
+        }
+
+        // Get CURRENT slider values directly from DOM
+        const rainfallSlider = parseFloat(document.getElementById("rainfall").value);
+        const tempSlider = parseFloat(document.getElementById("temperature").value);
+        const invasiveSpecies = parseFloat(document.getElementById("invasiveSpecies").value);
+        const humanImpact = parseFloat(document.getElementById("humanImpact").value);
+
+        // Combine seasonal effects with slider adjustments
+        const rainfall = Math.max(0, currentRainfall + (rainfallSlider - 50));
+        const temperature = Math.max(0, currentTemperature + (tempSlider - 25));
+
+        // ===== GRASS DYNAMICS =====
+        // Grass growth: affected by rainfall, bandicoots (positive), invasive species (negative)
+        const grassGrowth = (rainfall / 25) * (1 + bandicoots / 500);
+        const grassLoss = (pademelons / 30) + (invasiveSpecies / 8);
+        
+        grass += grassGrowth - grassLoss;
+        grass = Math.max(10, Math.min(1500, grass));
+
+        // ===== PADEMELON DYNAMICS =====
+        // Pademelon growth: affected by grass availability
+        const pademelonGrowth = (grass / 250) * (1 - pademelons / 600);
+        const pademelonLoss = (devils / 12) + (humanImpact / 20) + (invasiveSpecies / 20) + 
+                              (temperature > 30 ? (temperature - 30) / 10 : 0) +
+                              (temperature < 10 ? (10 - temperature) / 10 : 0);
+        
+        pademelons += pademelonGrowth - pademelonLoss;
+        pademelons = Math.max(1, Math.min(600, pademelons));
+
+        // ===== DEVIL DYNAMICS =====
+        // Devil growth: depends on prey availability
+        const devilPrey = (pademelons + bandicoots) * 0.4;
+        const devilGrowth = ((pademelons + bandicoots) / 180) * (1 - devils / (devilPrey + 1));
+        const devilLoss = (humanImpact / 12) + 
+                          (temperature > 35 ? (temperature - 35) / 8 : 0) +
+                          (temperature < 5 ? (5 - temperature) / 8 : 0);
+        
+        devils += devilGrowth - devilLoss;
+        devils = Math.max(1, Math.min(devilPrey, devils));
+
+        // ===== BANDICOOT DYNAMICS =====
+        // Bandicoot growth: affected by grass, competition, and predation
+        const bandicootGrowth = (grass / 350) * (1 - bandicoots / 250);
+        const bandicootLoss = (devils / 20) + (invasiveSpecies / 12) + (humanImpact / 20) +
+                              (pademelons / 150) +
+                              (temperature > 32 ? (temperature - 32) / 12 : 0);
+        
+        bandicoots += bandicootGrowth - bandicootLoss;
+        bandicoots = Math.max(1, Math.min(250, bandicoots));
+
+        // ===== ECOSYSTEM FEEDBACKS =====
+        // Bandicoots improve soil health
+        if (bandicoots > 30 && Math.random() < 0.05) {
+          grass += bandicoots / 200;
+        }
+
+        // Devils help control pademelon overpopulation
+        if (pademelons > 300 && devils < pademelons / 10) {
+          devils += 0.2; // Devils increase when prey is abundant
+        }
+
+        // Update max values for achievements
+        maxGrass = Math.max(maxGrass, grass);
+        maxPademelons = Math.max(maxPademelons, pademelons);
+        maxDevils = Math.max(maxDevils, devils);
+        maxBandicoots = Math.max(maxBandicoots, bandicoots);
+
+        // Update chart every 10 frames
+        if (customFrameCount % 10 === 0) {
+          populationHistory.push({
+            grass: grass,
+            pademelons: pademelons,
+            devils: devils,
+            bandicoots: bandicoots
+          });
+          
+          if (populationHistory.length > 100) {
+            populationHistory.shift();
+          }
+          
+          chart.data.labels.push(customFrameCount);
+          chart.data.datasets[0].data.push(grass);
+          chart.data.datasets[1].data.push(pademelons);
+          chart.data.datasets[2].data.push(devils);
+          chart.data.datasets[3].data.push(bandicoots);
+          
+          if (chart.data.labels.length > 50) {
+            chart.data.labels.shift();
+            chart.data.datasets.forEach(d => d.data.shift());
+          }
+          chart.update();
+        }
+
+        // Check for random events
+        if (showDisasters && Math.random() < 0.001 * speedMultiplier) {
+          triggerRandomEvent();
+        }
+
+        // Check objectives and update metrics
+        checkObjectives();
+        updateEcosystemMetrics();
+        
+        // Update displays
+        updateSpeciesDisplays();
+        updateUI();
+      }
+
+      // Update ecosystem metrics
+      function updateEcosystemMetrics() {
+        // Calculate biodiversity index (Shannon-like index)
+        const total = grass + pademelons + devils + bandicoots;
+        if (total > 0) {
+          const p1 = grass / total;
+          const p2 = pademelons / total;
+          const p3 = devils / total;
+          const p4 = bandicoots / total;
+          biodiversityIndex = 1 - (p1*p1 + p2*p2 + p3*p3 + p4*p4);
+          biodiversityIndex = Math.min(1, biodiversityIndex * 1.5); // Scale for better visibility
+        }
+        
+        // Update health display
+        updateHealthDisplay();
+      }
+
+      // Update health display
+      function updateHealthDisplay() {
+        let healthStatusText = "Healthy";
+        let healthPercentage = 100;
+        let healthColor = "#2ecc71";
+        
+        if (grass < 50 || pademelons < 10 || devils < 5 || bandicoots < 10) {
+          healthStatusText = "Critical";
+          healthPercentage = 20;
+          healthColor = "#e74c3c";
+        } else if (biodiversityIndex < 0.3) {
+          healthStatusText = "Poor";
+          healthPercentage = 40;
+          healthColor = "#f39c12";
+        } else if (biodiversityIndex < 0.6) {
+          healthStatusText = "Fair";
+          healthPercentage = 70;
+          healthColor = "#3498db";
+        }
+        
+        healthStatus.style.width = `${healthPercentage}%`;
+        healthStatus.style.background = healthColor;
+        healthText.textContent = healthStatusText;
+        healthText.style.color = healthColor;
+        
+        document.getElementById("biodiversityValue").textContent = biodiversityIndex.toFixed(2);
+      }
+
+      // Update species displays
+      function updateSpeciesDisplays() {
+        grassValue.textContent = Math.round(grass);
+        pademelonsValue.textContent = Math.round(pademelons);
+        devilsValue.textContent = Math.round(devils);
+        bandicootsValue.textContent = Math.round(bandicoots);
+      }
+
+      // Draw visualization
+      function drawVisualization() {
+        // Background with seasonal colors
+        p.background(showSeasons ? seasonParams[season].color : 240);
+        
+        // Draw ecosystem visualization
+        drawEcosystem();
+        
+        // Draw particle effects
+        drawParticles();
+      }
+
+      // Draw ecosystem visualization
+      function drawEcosystem() {
+        // Draw food web connections
+        drawFoodWeb();
+        
+        // Draw population indicators with centered spacing
+        const spacing = p.width / 5;
+        drawPopulationIndicator(spacing, p.height/2, grass, "#4CAF50", "Grass");
+        drawPopulationIndicator(2 * spacing, p.height/2, pademelons, "#FF9800", "Pademelons");
+        drawPopulationIndicator(3 * spacing, p.height/2, devils, "#F44336", "Devils");
+        drawPopulationIndicator(4 * spacing, p.height/2, bandicoots, "#FFEB3B", "Bandicoots");
+      }
+
+      // Draw food web connections
+      function drawFoodWeb() {
+        p.strokeWeight(2);
+        const spacing = p.width / 5;
+        
+        // Grass → Pademelons
+        if (grass > 10 && pademelons > 10) {
+          p.stroke(76, 175, 80, 150);
+          p.line(spacing + 20, p.height/2, 2 * spacing - 20, p.height/2);
+        }
+        
+        // Pademelons → Devils
+        if (pademelons > 10 && devils > 10) {
+          p.stroke(244, 67, 54, 150);
+          p.line(2 * spacing + 20, p.height/2, 3 * spacing - 20, p.height/2);
+        }
+        
+        // Bandicoots → Grass (positive feedback)
+        if (bandicoots > 10 && grass > 10) {
+          p.stroke(255, 235, 59, 150);
+          p.drawingContext.setLineDash([5, 3]);
+          p.line(4 * spacing - 20, p.height/2, spacing + 20, p.height/2);
+          p.drawingContext.setLineDash([]);
+        }
+      }
+
+      // Draw particle effects
+      function drawParticles() {
+        // Update and draw grass particles
+        grassParticles = grassParticles.filter(part => {
+          part.x += part.vx || 0;
+          part.y += part.vy || -1;
+          part.life--;
+          if (part.life > 0) {
+            p.fill(76, 175, 80, part.life);
+            p.noStroke();
+            p.ellipse(part.x, part.y, part.size || 5);
+            return true;
+          }
+          return false;
+        });
+        
+        // Update and draw pademelon particles
+        pademelonParticles = pademelonParticles.filter(part => {
+          part.x += part.vx || 0;
+          part.y += part.vy || -1;
+          part.life--;
+          if (part.life > 0) {
+            p.fill(255, 152, 0, part.life);
+            p.noStroke();
+            p.ellipse(part.x, part.y, part.size || 8);
+            return true;
+          }
+          return false;
+        });
+        
+        // Update and draw devil particles
+        devilParticles = devilParticles.filter(part => {
+          part.x += part.vx || 0;
+          part.y += part.vy || -1;
+          part.life--;
+          if (part.life > 0) {
+            p.fill(244, 67, 54, part.life);
+            p.noStroke();
+            p.ellipse(part.x, part.y, part.size || 10);
+            return true;
+          }
+          return false;
+        });
+        
+        // Update and draw bandicoot particles
+        bandicootParticles = bandicootParticles.filter(part => {
+          part.x += part.vx || 0;
+          part.y += part.vy || -1;
+          part.life--;
+          if (part.life > 0) {
+            p.fill(255, 235, 59, part.life);
+            p.noStroke();
+            p.ellipse(part.x, part.y, part.size || 6);
+            return true;
+          }
+          return false;
+        });
+      }
+
+      // Draw population indicator
+      function drawPopulationIndicator(x, y, population, color, label) {
+        const size = p.map(population, 0, 1000, 20, 120);
+        const alpha = p.map(population, 0, 1000, 100, 255);
+        
+        // Parse color string to RGB
+        let r, g, b;
+        if (color === "#4CAF50") { r = 76; g = 175; b = 80; }
+        else if (color === "#FF9800") { r = 255; g = 152; b = 0; }
+        else if (color === "#F44336") { r = 244; g = 67; b = 54; }
+        else if (color === "#FFEB3B") { r = 255; g = 235; b = 59; }
+        else { r = 100; g = 100; b = 100; }
+        
+        // Draw base circle
+        p.fill(r, g, b, alpha);
+        p.noStroke();
+        p.ellipse(x, y, size);
+        
+        // Draw animated pulse if population is growing
+        if (population > 0) {
+          const pulseSize = size * (1 + 0.1 * Math.sin(p.frameCount * 0.05));
+          p.fill(r, g, b, alpha * 0.3);
+          p.ellipse(x, y, pulseSize);
+        }
+        
+        // Label
+        p.fill(0);
+        p.textSize(12);
+        p.textAlign(p.CENTER);
+        p.text(`${label}: ${Math.round(population)}`, x, y + size/2 + 20);
+      }
+
+      // Update UI elements
+      function updateUI() {
+        pointsDisplay.textContent = points;
+        updateObjectiveDisplay();
+        
+        if (points >= rangerBadgePoints && !rangerBadgeAchieved) {
+          rangerBadgeAchieved = true;
+          showRangerBadge();
+        }
+      }
+
+      // Update objective display
+      function updateObjectiveDisplay() {
+        const nextObj = objectives.find(obj => !obj.achieved) || 
+                        ongoingObjectives.find(obj => !obj.achieved);
+        
+        if (nextObj) {
+          objectiveDisplay.textContent = nextObj.description;
+          
+          // Calculate progress percentage
+          let progress = 0;
+          if (nextObj.type === "balanced") {
+            progress = Math.round(((1500 - nextObj.target) / 1500) * 100);
+          } else if (nextObj.type === "grass" || nextObj.type === "devils") {
+            progress = Math.round(((800 - nextObj.target) / 800) * 100);
+          } else if (nextObj.type === "pademelons") {
+            progress = Math.round((pademelons / 200) * 100);
+          } else if (nextObj.type === "biodiversity") {
+            progress = Math.round((customFrameCount / 1000) * 100);
+          }
+          
+          progress = Math.min(100, Math.max(0, progress));
+          progressBar.style.width = `${progress}%`;
+          progressText.textContent = `${progress}% complete`;
+        } else {
+          objectiveDisplay.textContent = "All objectives completed! Try for achievements.";
+          progressBar.style.width = "100%";
+          progressText.textContent = "100% complete";
+        }
+      }
+
+      // Check objectives and achievements
+      function checkObjectives() {
+        // Standard objectives
+        objectives.forEach(obj => {
+          if (obj.achieved) return;
+          
+          let isAchieved = false;
+          switch(obj.type) {
+            case "pademelons":
+              isAchieved = pademelons >= obj.target;
+              break;
+            case "apex_stability":
+              isAchieved = devils >= obj.target && grass > 400;
+              break;
+            case "keystone_effect":
+              isAchieved = grass >= 150 * obj.target;
+              break;
+            case "disasters":
+              isAchieved = obj.count >= obj.target;
+              break;
+            case "biodiversity":
+              isAchieved = biodiversityIndex > 0.7 && customFrameCount >= obj.target;
+              break;
+          }
+          
+          if (isAchieved) {
+            obj.achieved = true;
+            points += obj.points;
+            showAchievement(obj.description, obj.points);
+          }
+        });
+        
+        // Ongoing objectives
+        ongoingObjectives.forEach(obj => {
+          if (obj.achieved) return;
+          
+          let conditionMet = false;
+          switch(obj.type) {
+            case "grass":
+              conditionMet = obj.condition(grass);
+              break;
+            case "devils":
+              conditionMet = obj.condition(devils);
+              break;
+            case "balanced":
+              conditionMet = obj.condition(grass, pademelons, devils, bandicoots);
+              break;
+          }
+          
+          if (conditionMet) {
+            obj.target--;
+            if (obj.target <= 0) {
+              obj.achieved = true;
+              points += obj.points;
+              showAchievement(obj.description, obj.points);
+            }
+          } else {
+            obj.target = obj.type === "balanced" ? 1500 : 800;
+          }
+        });
+        
+        // Achievements
+        achievements.forEach(achievement => {
+          if (achievement.achieved) return;
+          
+          let achieved = false;
+          
+          if (achievement.description.includes("ongoing objectives")) {
+            achieved = ongoingObjectives.every(obj => obj.achieved);
+          } 
+          else if (achievement.description.includes("devil population")) {
+            if (devils > 70) {
+              achievement.frames = (achievement.frames || 0) + 1;
+              achieved = achievement.frames >= achievement.target;
+            } else {
+              achievement.frames = 0;
+            }
+          }
+          else if (achievement.description.includes("bandicoot population")) {
+            achieved = bandicoots >= achievement.target;
+          }
+          
+          if (achieved) {
+            achievement.achieved = true;
+            points += achievement.points;
+            showAchievement(achievement.description, achievement.points);
+          }
+        });
+      }
+
+      // Show event message
+      function showEventMessage(message, color) {
+        disasterMessage.querySelector('.message-text').textContent = message;
+        disasterMessage.style.backgroundColor = color;
+        disasterMessage.style.opacity = "1";
+        
+        setTimeout(() => {
+          disasterMessage.style.opacity = "0";
+        }, 3000);
+      }
+
+      // Show narrative message
+      function showNarrativeMessage(message) {
+        const narrativeElement = document.createElement("div");
+        narrativeElement.className = "narrative-message";
+        narrativeElement.innerHTML = `<i class="fas fa-info-circle"></i> ${message}`;
+        document.body.appendChild(narrativeElement);
+        
+        setTimeout(() => {
+          narrativeElement.style.opacity = "0";
+          setTimeout(() => narrativeElement.remove(), 1000);
+        }, 5000);
+      }
+
+      // Show achievement
+      function showAchievement(message, points) {
+        const achievementElement = document.createElement("div");
+        achievementElement.className = "achievement-message";
+        achievementElement.innerHTML = `
+          <div class="achievement-icon"><i class="fas fa-trophy"></i></div>
+          <div class="achievement-content">
+            <h3>Achievement Unlocked!</h3>
+            <p>${message}</p>
+            ${points > 0 ? `<div class="achievement-points">+${points} points</div>` : ''}
+          </div>
+        `;
+        document.getElementById("achievementsContainer").appendChild(achievementElement);
+        
+        setTimeout(() => {
+          achievementElement.style.opacity = "0";
+          setTimeout(() => achievementElement.remove(), 1000);
+        }, 3000);
+      }
+
+      // Show ranger badge
+      function showRangerBadge() {
+        document.getElementById("medalIcon").style.display = "flex";
+        document.getElementById("rangerBadge").style.display = "flex";
+        setTimeout(() => {
+          document.getElementById("rangerBadge").classList.add("show");
+        }, 100);
+      }
+
+      // Trigger random event
+      function triggerRandomEvent() {
+        const events = [
+          { 
+            name: "Bushfire", 
+            effect: () => {
+              grass *= 0.3;
+              pademelons *= 0.7;
+              devils *= 0.9;
+              showEventMessage("Bushfire occurred! Grass reduced by 70%", "#e74c3c");
+              
+              for (let i = 0; i < 50; i++) {
+                grassParticles.push({
+                  x: p.random(p.width),
+                  y: p.random(p.height),
+                  size: p.random(5, 15),
+                  life: p.random(50, 100),
+                  vx: p.random(-2, 2),
+                  vy: p.random(-3, -1)
+                });
+              }
+            }
+          },
+          {
+            name: "Devil Facial Tumor Disease",
+            effect: () => {
+              const diseaseSeverity = p.random(0.3, 0.7);
+              devils *= (1 - diseaseSeverity);
+              bandicoots *= (1 + diseaseSeverity * 0.5);
+              showEventMessage(`Devil disease outbreak! ${Math.round(diseaseSeverity * 100)}% of devils affected`, "#9b59b6");
+              
+              for (let i = 0; i < 20; i++) {
+                devilParticles.push({
+                  x: p.random(p.width),
+                  y: p.random(p.height),
+                  size: p.random(8, 12),
+                  life: p.random(50, 100),
+                  vx: p.random(-1, 1),
+                  vy: p.random(-1, 1)
+                });
+              }
+            }
+          },
+          {
+            name: "Drought",
+            effect: () => {
+              targetRainfall *= 0.4;
+              showEventMessage("Severe drought! Rainfall drastically reduced", "#3498db");
+              
+              for (let i = 0; i < 30; i++) {
+                grassParticles.push({
+                  x: p.random(p.width),
+                  y: p.random(p.height),
+                  size: p.random(3, 8),
+                  life: p.random(50, 100),
+                  vx: p.random(-0.5, 0.5),
+                  vy: p.random(-0.5, 0.5)
+                });
+              }
+            }
+          }
+        ];
+        
+        const event = events[Math.floor(p.random(events.length))];
+        event.effect();
+        disasterFrame = customFrameCount;
+        
+        const disasterObj = objectives.find(obj => obj.type === "disasters");
+        if (disasterObj) disasterObj.count++;
+      }
+
+      // Toggle pause state
+      function togglePause() {
+        isPaused = !isPaused;
+        const pauseBtn = document.getElementById("pauseButton");
+        if (isPaused) {
+          pauseBtn.innerHTML = '<i class="fas fa-play"></i> Resume';
+          pauseBtn.classList.remove("btn-primary");
+          pauseBtn.classList.add("btn-success");
+          p.noLoop();
+        } else {
+          pauseBtn.innerHTML = '<i class="fas fa-pause"></i> Pause';
+          pauseBtn.classList.remove("btn-success");
+          pauseBtn.classList.add("btn-primary");
+          p.loop();
+        }
+      }
+
+      // Toggle seasons display
+      function toggleSeasonsDisplay() {
+        showSeasons = document.getElementById("toggleSeasons").checked;
+      }
+
+      // Toggle disasters
+      function toggleDisasters() {
+        showDisasters = document.getElementById("toggleDisasters").checked;
+      }
+
+      // Toggle grass limit
+      function toggleGrassLimit() {
+        grassLimitEnabled = document.getElementById("toggleGrassLimit").checked;
+      }
+    };
+
+    // Create p5 instance
+    new p5(ecosystemSimulator, document.body);
     
-    // Smooth seasonal transitions
-    currentRainfall += (targetRainfall - currentRainfall) * interpolationSpeed;
-    currentTemperature += (targetTemperature - currentTemperature) * interpolationSpeed;
-  } else {
-    // When seasons are off, maintain baseline conditions
-    seasonDisplay.textContent = "None";
-    currentRainfall = 50;
-    currentTemperature = 25;
-  }
-
-  // Get CURRENT slider values directly from DOM
-  const rainfallSlider = parseFloat(document.getElementById("rainfall").value);
-  const tempSlider = parseFloat(document.getElementById("temperature").value);
-  const invasiveSpecies = parseFloat(document.getElementById("invasiveSpecies").value);
-  const humanImpact = parseFloat(document.getElementById("humanImpact").value);
-
-  // Combine seasonal effects with slider adjustments
-  // Rainfall slider range: 0-100, so -50 to +50 offset
-  const rainfall = currentRainfall + (rainfallSlider - 50);
-  
-  // Temperature slider range: 0-50, so -25 to +25 offset
-  const temperature = currentTemperature + (tempSlider - 25);
-
-  // ===== GRASS DYNAMICS =====
-  // Grass growth: affected by rainfall, bandicoots (positive), invasive species (negative)
-  const grassGrowth = (rainfall / 25) * (1 + bandicoots / 500); // Bandicoots help grass
-  const grassLoss = (pademelons / 40) + (invasiveSpecies / 10); // Grazing and invasives
-  
-  grass += grassGrowth - grassLoss;
-  grass = Math.max(10, Math.min(1500, grass));
-
-  // ===== PADEMELON DYNAMICS =====
-  // Pademelon growth: affected by grass availability
-  const pademelonGrowth = (grass / 300) * (1 - pademelons / 800); // Carrying capacity
-  const pademelonLoss = (devils / 15) + (humanImpact / 20) + (invasiveSpecies / 25) + 
-                        (temperature > 30 ? (temperature - 30) / 10 : 0) + // Heat stress
-                        (temperature < 10 ? (10 - temperature) / 10 : 0);  // Cold stress
-  
-  pademelons += pademelonGrowth - pademelonLoss;
-  pademelons = Math.max(1, Math.min(800, pademelons));
-
-  // ===== DEVIL DYNAMICS =====
-  // Devil growth: depends on prey availability
-  const devilPrey = (pademelons + bandicoots) * 0.3; // Carrying capacity based on prey
-  const devilGrowth = ((pademelons + bandicoots) / 200) * (1 - devils / (devilPrey + 1));
-  const devilLoss = (humanImpact / 15) + 
-                    (temperature > 35 ? (temperature - 35) / 8 : 0) + // Heat stress
-                    (temperature < 5 ? (5 - temperature) / 8 : 0);    // Cold stress
-  
-  devils += devilGrowth - devilLoss;
-  devils = Math.max(1, Math.min(devilPrey, devils));
-
-  // ===== BANDICOOT DYNAMICS =====
-  // Bandicoot growth: affected by grass, competition, and predation
-  const bandicootGrowth = (grass / 400) * (1 - bandicoots / 300); // Carrying capacity
-  const bandicootLoss = (devils / 25) + (invasiveSpecies / 15) + (humanImpact / 25) +
-                        (pademelons / 200) + // Competition with pademelons
-                        (temperature > 32 ? (temperature - 32) / 12 : 0);
-  
-  bandicoots += bandicootGrowth - bandicootLoss;
-  bandicoots = Math.max(1, Math.min(300, bandicoots));
-
-  // ===== ECOSYSTEM FEEDBACKS =====
-  // Bandicoots improve soil health (represented as bonus to grass)
-  if (bandicoots > 50 && Math.random() < 0.1) {
-    grass += bandicoots / 100; // Small bonus from digging
-  }
-
-  // Devils keep pademelons in check - if too many devils, they starve
-  if (devils > (pademelons + bandicoots) * 0.5) {
-    devils *= 0.98; // Starvation
-  }
-
-  // Update max values for achievements
-  maxGrass = Math.max(maxGrass, grass);
-  maxPademelons = Math.max(maxPademelons, pademelons);
-  maxDevils = Math.max(maxDevils, devils);
-  maxBandicoots = Math.max(maxBandicoots, bandicoots);
-
-  // Update population history every 10 frames
-  if (customFrameCount % 10 === 0) {
-    populationHistory.push({
-      grass: grass,
-      pademelons: pademelons,
-      devils: devils,
-      bandicoots: bandicoots
+    // Keyboard controls
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        const pauseBtn = document.getElementById("pauseButton");
+        if (pauseBtn) pauseBtn.click();
+      }
     });
-    
-    if (populationHistory.length > 100) {
-      populationHistory.shift();
-    }
-    
-    // Update chart
-    chart.data.labels.push(customFrameCount);
-    chart.data.datasets[0].data.push(grass);
-    chart.data.datasets[1].data.push(pademelons);
-    chart.data.datasets[2].data.push(devils);
-    chart.data.datasets[3].data.push(bandicoots);
-    
-    if (chart.data.labels.length > 50) {
-      chart.data.labels.shift();
-      chart.data.datasets.forEach(d => d.data.shift());
-    }
-    chart.update();
-  }
-
-  // Check for random events
-  if (showDisasters && Math.random() < 0.001 * speedMultiplier) {
-    triggerRandomEvent();
-  }
-
-  // Check objectives and update metrics
-  checkObjectives();
-  updateEcosystemMetrics();
-  
-  // Update UI displays
-  updateSpeciesDisplays();
-  updateUI();
-
-  customFrameCount++;
-}
-
-// Also fix the species displays update
-function updateSpeciesDisplays() {
-  document.getElementById('grass-value').textContent = Math.round(grass);
-  document.getElementById('pademelons-value').textContent = Math.round(pademelons);
-  document.getElementById('devils-value').textcontent = Math.round(devils);
-  document.getElementById('bandicoots-value').textContent = Math.round(bandicoots);
-}
+  });
+</script>
